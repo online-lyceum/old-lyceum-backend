@@ -21,38 +21,75 @@ Install python3-pip and python3-venv packages.
 ```shell
 python3 -m venv venv
 source ./venv/bin/activate
-pip3 install setuptools
+pip3 install -r requirements.txt
 pip3 install "git+https://github.com/prostoLavr/
               async_lyceum_api.git"
 ```
+### Run
+```shell
+# Setup postgresql
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
+                 -p "5432:5432" --name "postgres" postgres:15.1
 
-## Setup from source code
+# Uncomment ot recreate db if it exists
+# psql -h 0.0.0.0 -p 5432 -U postgres -c "DROP DATABASE db" 
+psql -h 0.0.0.0 -p 5432 -U postgres -c "CREATE DATABASE db"
+
+# See "async_lyceum_api --help" for more arguments
+async_lyceum_api --web-port 8080
+```
+
+## Setup from source code in Python virtual environment
 ### Install packages
-Install python3-pip and python3-venv packages.
+Install python3, python3-pip, python3-venv and docker. 
+Instead docker you can install postgres 15.1 but docker is recommended.
 
+### Clone source code
+```shell
+git clone https://github.com/prostoLavr/async_lyceum_api.git
+```
 ### Initialize new virtual environment
 ```shell
 python3 -m venv venv
 source ./venv/bin/activate
 pip3 install -r requirements.txt
 ```
-
 ### Initialize development mode
-WARNING: notify for point in the command end.
-```shell
-pip3 install -e .
-```
-
-### Run development mode
 Development mode is installing real-time updating python package.
 It's useful to developers because you don't need building and
 installing python package after edits.
 ```shell
-async_lyceum_api 
+pip3 install -e .  # <- This point in the end is important!
 ```
-or
+
+### Run native development mode
 ```shell
-async_lyceum_api --host 127.0.0.1 --port 8080
+# Setup postgresql
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
+                 -p "5432:5432" --name "postgres" postgres:15.1
+
+# Uncomment ot recreate db if it exists
+# psql -h 0.0.0.0 -p 5432 -U postgres -c "DROP DATABASE db" 
+psql -h 0.0.0.0 -p 5432 -U postgres -c "CREATE DATABASE db"
+
+# See "async_lyceum_api --help" for more arguments
+async_lyceum_api --web-port 8080
+```
+
+## Setup from source code in Docker
+
+### Install packages
+Install python3-pip python3-venv, docker and docker-compose packages.
+
+### Clone source code
+```shell
+git clone https://github.com/prostoLavr/async_lyceum_api.git
+```
+### Initialize new virtual environment
+```shell
+python3 -m venv venv
+source ./venv/bin/activate
+pip3 install -r requirements.txt
 ```
 
 ### Build python wheel package
@@ -61,19 +98,8 @@ This command will create python wheel file in dist directory.
 python3 setup.py sdist bdist_wheel
 ```
 
-
-### Install python wheel package
-WARNING: This command will break the development mode.
-Go to "Initialize development mode" step to start the development mode again.
+### Build Docker image and up docker-compose services
 ```shell
-pip3 install ./dist/async_lyceum_api-{VERSION}-py3-none-any.whl
-```
-
-### Run
-```shell
-async_lyceum_api
-```
-Or
-```shell
-async_lyceum_api --host 127.0.0.1 --port 8080
+docker build -t async-lyceum-api .  # <- This point in the end is important!
+docker-compose up -d
 ```
