@@ -1,0 +1,32 @@
+version: '3'
+services:
+  async_lyceum_api:
+    image: async-lyceum-api
+    restart: always
+    depends_on:
+      - "postgres"
+    ports:
+      - "8001:80"
+    env_file:
+      - .variables.env
+    volumes:
+      - "lyceum-images:/images"
+    networks:
+      front_net:
+      default:
+
+  postgres:
+    image: postgres:15.1
+    restart: always
+    env_file:
+      - .variables.env
+    networks:
+      default:
+
+networks:
+  front_net:
+    external: true
+
+
+volumes:
+  lyceum-images:
