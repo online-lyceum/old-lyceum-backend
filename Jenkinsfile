@@ -10,15 +10,21 @@ pipeline {
     }
     triggers { pollSCM('* * * * *') }
     stages {
+        stage("Checkout"){
+            steps {
+                git branch: 'main', url: 'https://github.com/prostoLavr/async_lyceum_api.git'
+            }
+
+        }
         stage("Create a venv") {
-            when { not { expression { return not fileExists ('./venv') } } }
+            when { not { expression { return fileExists ('./venv') } } }
             steps {
                 sh 'python3 -m venv ./venv'
-                sh './venv/bin/python3 -m pip install -r requirements.txt'
             }
         }
         stage("Build image") {
             steps {
+                sh './venv/bin/python3 -m pip install -r ./requirements.txt'
                 sh 'rm -rf dist'
                 sh './venv/bin/python3 setup.py sdist bdist_wheel'
                 sh 'docker build -t async-lyceum-api .'
