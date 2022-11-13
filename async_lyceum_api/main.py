@@ -151,7 +151,9 @@ async def create_tables():
                             REFERENCES Subgroup(subgroup_id),
                     CONSTRAINT fk_lesson_id
                         FOREIGN KEY (lesson_id)
-                            REFERENCES Lesson(lesson_id)
+                            REFERENCES Lesson(lesson_id),
+                    CONSTRAINT uq_lesson_id_subgroup_id
+                        UNIQUE (subgroup_id, lesson_id)
                 );
         ''')
 
@@ -188,8 +190,8 @@ async def create_class(school_id, number, letter):
                       letter = '{letter}'
         ''')
         await conn.execute(f'''
-            INSERT INTO Subgroup (class_id) VALUES
-                ('{res['class_id']}')
+            INSERT INTO Subgroup (class_id, name) VALUES
+                ('{res['class_id']}', 'default')
             ON CONFLICT DO NOTHING;
         ''')
 
@@ -264,7 +266,7 @@ async def create_lesson(name, start_time, end_time, loop_day, *,
                         {', '.join([f"('{lesson_id}', "
                                     f"'{subgroup_row['subgroup_id']}')" 
                                     for subgroup_row in subgroups])}
-                        
+                    ON CONFLICT DO NOTHING;
             ''')
 
 
@@ -329,7 +331,7 @@ class Lesson(web.View):
         school_id = self.request.match_info['school_id']
         async with app.pool.acquire() as connection:
             result = await connection.fetch('''
-                    SELECT 
+                    SELECT
                             Lesson.name,
                             LessonTime.loop_day, 
                             LessonTime.start_time,
@@ -360,6 +362,49 @@ class Lesson(web.View):
                                  x['end_time'].minute]
                 } for x in result]
         })
+
+
+@routes.view('/class/{class_id}/lesson')
+class LessonsOfClass(web.View):
+    async def get(self):
+        class_id = self.request.match_info['class_id']
+        async with app.pool.acquire() as conn:
+            result = await conn.fetch(f'''
+                    SELECT 
+                            Lesson.name AS lesson_name,
+                            LessonTime.loop_day, 
+                            LessonTime.start_time,
+                            LessonTime.end_time,
+                            Teacher.name AS teacher_name
+                        FROM Lesson
+                    JOIN Teacher
+                        ON Lesson.teacher_id = Teacher.teacher_id
+                    JOIN SubgroupLesson
+                        ON Lesson.lesson_id = SubgroupLesson.lesson_id
+                    JOIN Subgroup
+                        ON SubgroupLesson.subgroup_id = Subgroup.subgroup_id
+                    JOIN Class
+                        ON Subgroup.class_id = Class.class_id
+                    JOIN LessonTime
+                        ON Lesson.lesson_time_id = LessonTime.lesson_time_id 
+                            AND Class.school_id = LessonTime.school_id
+                    WHERE Class.class_id = '{class_id}'
+            ''')
+            return JsonResponse({
+                'class_id': class_id,
+                'lessons':
+                    [
+                        {
+                            'name': x['lesson_name'],
+                            'loop_day': x['loop_day'],
+                            'start_time': [x['start_time'].hour,
+                                           x['start_time'].minute],
+                            'end_time': [x['end_time'].hour,
+                                         x['end_time'].minute],
+                            'teacher': x['teacher_name']
+                        } for x in result
+                    ]
+            })
 
 
 def run_app():
