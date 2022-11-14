@@ -5,8 +5,6 @@ services:
     restart: always
     depends_on:
       - "postgres"
-    ports:
-      - "8001:80"
     env_file:
       - .variables.env
     volumes:

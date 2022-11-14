@@ -10,12 +10,6 @@ pipeline {
     }
     triggers { pollSCM('* * * * *') }
     stages {
-        stage("Checkout"){
-            steps {
-                git branch: 'main', url: 'https://github.com/prostoLavr/async_lyceum_api.git'
-            }
-
-        }
         stage("Create a venv") {
             when { not { expression { return fileExists ('./venv') } } }
             steps {
