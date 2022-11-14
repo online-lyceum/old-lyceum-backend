@@ -1,5 +1,4 @@
 # Асинхронная версия API расписания для проекта Лицей в Цифре
-
 ## Назначение
 Данное API предназначено для получения и создания уроков в системе 
 "Лицей в цифре". Он позволяет ученикам и учителям смотреть своё расписание, 
@@ -53,45 +52,72 @@ Dev: https://test-async-api.lava-land.ru
 таких списков будет приведено далее.
 
 Ответ от сервера на запрос получения объекта - это JSON с атрибутами 
-(свойствами, параметрами) объекта. ПРОДОЛЖЕНИЕ СЛЕДУЕТ
+(свойствами, параметрами) объекта. Например, `/teacher/1/info` вернёт
+`{"teacher_id": 1, "name": "Иванов Иван Иванович"}`
 
 ### Список доступных URL:
-`/school`
-
-`/school/1/class`
-
-`/school/1/lesson`
-
-`/class/1/lesson`
-
-
-## Setup from GitHub (Without development mode)
-### Install packages
-Install python3-pip and python3-venv packages.
-
-### Create venv and install package
-```shell
-python3 -m venv venv
-source ./venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install "git+https://github.com/prostoLavr/
-              async_lyceum_api.git"
+Запрос `/school`
+Ответ 
+```json
+{
+    "schools": [
+        {
+            "school_id": 1,
+            "name": "Лицей №2",
+            "address": "Иркутск, ул. ... д. ..."
+        },
+        {
+            "school_id": 2,
+            "name": "Иркутский Гос.Университет",
+            "address": "Иркутск"
+        }
+    ]
+}
 ```
-### Run
-```shell
-# Setup postgresql
-docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
-                 -p "5432:5432" --name "postgres" postgres:15.1
+ПРОДОЛЖЕНИЕ СЛЕДУЕТ
+Запрос `/school/1/class`
+```json
 
-# Uncomment ot recreate db if it exists
+```
+
+Запрос `/school/1/lesson`
+```json
+```
+
+Запрос `/class/1/lesson`
+```json
+```
+
+## Установить серверную часть API с GitHub (Не подходит дла разработки)
+### Зависимости
+Установите в вашу систему python3-pip и python3-venv. Если вы используете 
+Windows OS, то при установке python3 необходимо выбрать пункт "Add python to PATH" 
+
+
+### Созадание виртуального окружения и установка API 
+```shell
+python3 -m venv venv  # Создаёт виртуальное окружение
+source ./venv/bin/activate  # Активирует виртуальное окружение
+pip3 install "git+https://github.com/prostoLavr/
+              async_lyceum_api.git"  # Устанавливает код из GitHub (не из вашего каталога)
+```
+### Запуск
+```shell
+# Запуск PostgreSQL через Docker
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
+                 -p "5432:5432" --name "postgres" postgres:15.1 
+
+# Раскомментируйте следующую строку, чтобы очистить базу данных. 
 # psql -h 0.0.0.0 -p 5432 -U postgres -c "DROP DATABASE db" 
+# Создание базы данных внутри Docker контейнера
 psql -h 0.0.0.0 -p 5432 -U postgres -c "CREATE DATABASE db"
 
-# See "async_lyceum_api --help" for more arguments
+# Запуск API. Введите "async_lyceum_api --help" чтобы посмотреть остальные аргументы.
 async_lyceum_api --web-port 8080
 ```
 
-## Setup from source code in Python virtual environment
+## Установка из исходников с помощью виртуального окружения
+ПРОДОЛЖЕНИЕ СЛЕДУЕТ
 ### Install packages
 Install python3, python3-pip, python3-venv and docker. 
 Instead docker you can install postgres 15.1 but docker is recommended.
