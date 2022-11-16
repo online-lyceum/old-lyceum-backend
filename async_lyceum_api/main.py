@@ -84,7 +84,8 @@ async def create_tables():
                     CREATE TABLE IF NOT EXISTS LessonTime (
                         lesson_time_id SERIAL PRIMARY KEY UNIQUE,
                         school_id INT NOT NULL,
-                        loop_day INT NOT NULL,
+                        weekday INT NOT NULL,
+                        week INT NULL,
                         start_time TIME NOT NULL,
                         end_time TIME NOT NULL,
                         CONSTRAINT fk_school_id
@@ -109,7 +110,12 @@ async def create_tables():
                             FOREIGN KEY (lesson_time_id)
                                 REFERENCES LessonTime(lesson_time_id),
                         CONSTRAINT uq_lesson
-                            UNIQUE (school_id, name, lesson_time_id, teacher_id)
+                            UNIQUE (
+                                school_id, 
+                                name, 
+                                lesson_time_id, 
+                                teacher_id
+                            )
                     );
             ''')
         await conn.execute('''
@@ -196,8 +202,8 @@ async def create_class(school_id, number, letter):
         ''')
 
 
-async def create_lesson(name, start_time, end_time, loop_day, *,
-                        class_id=None, subgroup_id=None, teacher_id=None):
+async def create_lesson(name, start_time, end_time, weekday, week=None,
+                        teacher_id=None, *, class_id=None, subgroup_id=None):
     if class_id is None and subgroup_id is None:
         raise TypeError('Set class_id or subgroup_id')
     async with app.pool.acquire() as conn:
@@ -221,9 +227,14 @@ async def create_lesson(name, start_time, end_time, loop_day, *,
                             school_id, 
                             start_time, 
                             end_time,
-                            loop_day
+                            weekday,
+                            week
                         ) VALUES
-                    ('{school_id}', '{start_time}', '{end_time}', '{loop_day}')
+                    ('{school_id}', 
+                    '{start_time}', 
+                    '{end_time}', 
+                    '{weekday}',
+                    {f"'{week}'" if week is not None else "null"})
                 ON CONFLICT DO NOTHING;
         ''')
         lesson_time_id_row = await conn.fetchrow(f'''
@@ -234,9 +245,17 @@ async def create_lesson(name, start_time, end_time, loop_day, *,
         ''')
         lesson_time_id = lesson_time_id_row['lesson_time_id']
         await conn.execute(f'''
-                INSERT INTO Lesson (school_id, name, lesson_time_id, teacher_id) VALUES
-                    ('{school_id}', '{name}', '{lesson_time_id}', '{teacher_id}')
-                ON CONFLICT DO NOTHING;
+                INSERT INTO Lesson (
+                        school_id, 
+                        name, 
+                        lesson_time_id, 
+                        teacher_id
+                    ) VALUES (
+                        '{school_id}', 
+                        '{name}', 
+                        '{lesson_time_id}', 
+                        '{teacher_id}'
+                    ) ON CONFLICT DO NOTHING;
         ''')
         lesson_id_row = await conn.fetchrow(f'''
                 SELECT lesson_id FROM Lesson
@@ -307,13 +326,15 @@ class School(web.View):
     async def get(self):
         async with app.pool.acquire() as connection:
             result = await connection.fetch("SELECT * FROM School")
-        return JsonResponse({'schools': [dict(x) for x in result]})
+        return JsonResponse(
+            {'schools': [dict(x) for x in result]}
+        )
 
 
 @routes.view('/school/{school_id}/class')
 class Class(web.View):
     async def get(self):
-        school_id = self.request.match_info['school_id']
+        school_id = int(self.request.match_info['school_id'])
         async with app.pool.acquire() as connection:
             result = await connection.fetch('''
                     SELECT * FROM Class
@@ -328,12 +349,16 @@ class Class(web.View):
 @routes.view('/school/{school_id}/lesson')
 class Lesson(web.View):
     async def get(self):
-        school_id = self.request.match_info['school_id']
+        school_id = int(self.request.match_info['school_id'])
         async with app.pool.acquire() as connection:
             result = await connection.fetch('''
-                    SELECT
+                    SELECT  
+                            Class.class_id,
+                            Class.letter,
+                            Class.number,
                             Lesson.name,
-                            LessonTime.loop_day, 
+                            LessonTime.weekday,
+                            LessonTime.week,
                             LessonTime.start_time,
                             LessonTime.end_time
                         FROM Lesson
@@ -350,18 +375,23 @@ class Lesson(web.View):
                             AND Class.school_id = LessonTime.school_id
                     WHERE Class.school_id = '{}'
             '''.format(school_id))
-        return JsonResponse({
-            'school_id': school_id,
-            'lessons': [
-                {
-                    'name': x['name'],
-                    'loop_day': x['loop_day'],
-                    'start_time': [x['start_time'].hour,
-                                   x['start_time'].minute],
-                    'end_time': [x['end_time'].hour,
-                                 x['end_time'].minute]
-                } for x in result]
-        })
+
+        answer_json = []
+        for result_row in result:
+            answer_json.append({'class_id': result_row['class_id'],
+                                'number': result_row['number'],
+                                'letter': result_row['letter'],
+                                'lessons': [{
+                                    'name': x['name'],
+                                    'weekday': x['weekday'],
+                                    'week': x['week'],
+                                    'start_time': [x['start_time'].hour,
+                                                   x['start_time'].minute],
+                                    'end_time': [x['end_time'].hour,
+                                                 x['end_time'].minute]
+                                } for x in result
+                                    if x['class_id'] == result_row['class_id']]})
+        return JsonResponse(answer_json)
 
 
 @routes.view('/class/{class_id}/lesson')
@@ -369,10 +399,15 @@ class LessonsOfClass(web.View):
     async def get(self):
         class_id = self.request.match_info['class_id']
         async with app.pool.acquire() as conn:
+            class_info = await conn.fetchrow(f'''
+                    SELECT number, letter FROM Class
+                        WHERE class_id = '{class_id}'
+            ''')
             result = await conn.fetch(f'''
                     SELECT 
                             Lesson.name AS lesson_name,
-                            LessonTime.loop_day, 
+                            LessonTime.weekday, 
+                            LessonTime.week,
                             LessonTime.start_time,
                             LessonTime.end_time,
                             Teacher.name AS teacher_name
@@ -392,11 +427,14 @@ class LessonsOfClass(web.View):
             ''')
             return JsonResponse({
                 'class_id': class_id,
+                'number': class_info['number'],
+                'letter': class_info['letter'],
                 'lessons':
                     [
                         {
                             'name': x['lesson_name'],
-                            'loop_day': x['loop_day'],
+                            'weekday': x['weekday'],
+                            'week': x['week'],
                             'start_time': [x['start_time'].hour,
                                            x['start_time'].minute],
                             'end_time': [x['end_time'].hour,
