@@ -1,68 +1,27 @@
 import asyncio
 import logging
-from typing import Optional
-from argparse import ArgumentParser
-import json
 from datetime import time
 
 from aiohttp import web
 import asyncpg
+import uvloop
 
+from async_lyceum_api.formers import LessonInfo, SchoolInfo, ClassInfo
+from async_lyceum_api.formers import LessonFormer, JsonResponse
+from async_lyceum_api.create_app import create_app_routes_loop
+from async_lyceum_api import console_args
+from async_lyceum_api.create_app import create_db
+
+
+asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+asyncio.set_event_loop(uvloop.new_event_loop())
 
 logger = logging.getLogger(__name__)
 logger.setLevel('DEBUG')
-parser = ArgumentParser()
-parser.add_argument('-w', '--web-host', default='0.0.0.0')
-parser.add_argument('-p', '--web-port', default=80, type=int)
-parser.add_argument('-H', '--postgres-host', default='0.0.0.0')
-parser.add_argument('-U', '--user', default='postgres')
-parser.add_argument('-D', '--database', default='db')
-parser.add_argument('-P', '--postgres-port', default=5432, type=int)
-parser.add_argument('-S', '--postgres-secret', required=False)
-
-console_args = parser.parse_args()
+logging.basicConfig(level=logging.DEBUG)
 
 
-class MyApplication(web.Application):
-    def __init__(self, *args, **kwargs):
-        super(MyApplication, self).__init__(*args, **kwargs)
-        self.pool: Optional[asyncpg.Pool] = None
-
-
-async def create_db_connection_pool(args, loop):
-    return await asyncpg.create_pool(
-        host=args.postgres_host,
-        database=args.database,
-        user=args.user,
-        port=args.postgres_port,
-        password=args.postgres_secret,
-        loop=loop
-    )
-
-
-app = MyApplication()
-routes = web.RouteTableDef()
-loop = asyncio.new_event_loop()
-app.pool = loop.run_until_complete(
-    create_db_connection_pool(console_args, loop)
-)
-
-
-async def create_db(args):
-    conn = await asyncpg.connect(
-        host=args.postgres_host,
-        port=args.postgres_port,
-        user=args.user,
-        password=args.postgres_secret
-    )
-    try:
-        await conn.execute(f"CREATE DATABASE {args.database}")
-    except asyncpg.exceptions.DuplicateDatabaseError:
-        pass
-    await conn.execute('''
-                DROP SCHEMA public CASCADE;
-                CREATE SCHEMA public
-            ''')
+app, routes, loop = create_app_routes_loop()
 
 
 async def create_tables():
@@ -283,36 +242,10 @@ async def create_lesson(name, start_time, end_time, weekday, week=None,
                                     subgroup_id
                                     ) VALUES
                         {', '.join([f"('{lesson_id}', "
-                                    f"'{subgroup_row['subgroup_id']}')" 
+                                    f"'{subgroup_row['subgroup_id']}')"
                                     for subgroup_row in subgroups])}
                     ON CONFLICT DO NOTHING;
             ''')
-
-
-async def initialize_database(args):
-    await create_db(args)
-    await create_tables()
-    await create_school('Лицей №2', 'Иркутск')
-    await create_class(1, 10, 'Б'),
-    await create_teacher('Светлана Николаевна')
-    await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
-                        class_id=1, teacher_id=1)
-
-
-loop.run_until_complete(initialize_database(console_args))
-
-
-class JsonResponse(web.Response):
-    def __init__(self, data):
-        answer = json.dumps(
-            data,
-            ensure_ascii=False,
-            indent=4
-        )
-        super(JsonResponse, self).__init__(
-            text=answer,
-            content_type='application/json'
-        )
 
 
 @routes.view('/')
@@ -351,7 +284,7 @@ class Lesson(web.View):
     async def get(self):
         school_id = int(self.request.match_info['school_id'])
         async with app.pool.acquire() as connection:
-            result = await connection.fetch('''
+            lessons = await connection.fetch('''
                     SELECT  
                             Class.class_id,
                             Class.letter,
@@ -360,7 +293,8 @@ class Lesson(web.View):
                             LessonTime.weekday,
                             LessonTime.week,
                             LessonTime.start_time,
-                            LessonTime.end_time
+                            LessonTime.end_time,
+                            Teacher.name as teacher_name
                         FROM Lesson
                     JOIN Teacher
                         ON Lesson.teacher_id = Teacher.teacher_id
@@ -375,23 +309,12 @@ class Lesson(web.View):
                             AND Class.school_id = LessonTime.school_id
                     WHERE Class.school_id = '{}'
             '''.format(school_id))
-
-        answer_json = []
-        for result_row in result:
-            answer_json.append({'class_id': result_row['class_id'],
-                                'number': result_row['number'],
-                                'letter': result_row['letter'],
-                                'lessons': [{
-                                    'name': x['name'],
-                                    'weekday': x['weekday'],
-                                    'week': x['week'],
-                                    'start_time': [x['start_time'].hour,
-                                                   x['start_time'].minute],
-                                    'end_time': [x['end_time'].hour,
-                                                 x['end_time'].minute]
-                                } for x in result
-                                    if x['class_id'] == result_row['class_id']]})
-        return JsonResponse(answer_json)
+            answer = LessonFormer()
+            for lesson in lessons:
+                answer.add_class(ClassInfo.from_lesson(lesson))
+                answer.add_lesson(LessonInfo.from_raw(lesson))
+        si = SchoolInfo(school_id)
+        return JsonResponse(answer.classes_to_dict_with_school_info(si))
 
 
 @routes.view('/class/{class_id}/lesson')
@@ -399,18 +322,19 @@ class LessonsOfClass(web.View):
     async def get(self):
         class_id = self.request.match_info['class_id']
         async with app.pool.acquire() as conn:
-            class_info = await conn.fetchrow(f'''
-                    SELECT number, letter FROM Class
+            class_info = ClassInfo(*await conn.fetchrow(f'''
+                    SELECT class_id, number, letter FROM Class
                         WHERE class_id = '{class_id}'
-            ''')
-            result = await conn.fetch(f'''
+            '''))
+            lessons = await conn.fetch(f'''
                     SELECT 
-                            Lesson.name AS lesson_name,
+                            Lesson.name,
                             LessonTime.weekday, 
                             LessonTime.week,
                             LessonTime.start_time,
                             LessonTime.end_time,
-                            Teacher.name AS teacher_name
+                            Teacher.name AS teacher_name,
+                            Class.class_id
                         FROM Lesson
                     JOIN Teacher
                         ON Lesson.teacher_id = Teacher.teacher_id
@@ -425,24 +349,22 @@ class LessonsOfClass(web.View):
                             AND Class.school_id = LessonTime.school_id
                     WHERE Class.class_id = '{class_id}'
             ''')
-            return JsonResponse({
-                'class_id': class_id,
-                'number': class_info['number'],
-                'letter': class_info['letter'],
-                'lessons':
-                    [
-                        {
-                            'name': x['lesson_name'],
-                            'weekday': x['weekday'],
-                            'week': x['week'],
-                            'start_time': [x['start_time'].hour,
-                                           x['start_time'].minute],
-                            'end_time': [x['end_time'].hour,
-                                         x['end_time'].minute],
-                            'teacher': x['teacher_name']
-                        } for x in result
-                    ]
-            })
+            answer = LessonFormer()
+            answer.add_class(class_info)
+            answer.add_lessons([LessonInfo(**lesson) for lesson in lessons])
+            return JsonResponse(answer.class_to_dict())
+
+
+async def initialize_database(args):
+    await create_db(args)
+    await create_tables()
+    await create_school('Лицей №2', 'Иркутск')
+    await create_class(1, 10, 'Б'),
+    await create_teacher('Светлана Николаевна')
+    await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
+                        class_id=1, teacher_id=1)
+
+loop.run_until_complete(initialize_database(console_args))
 
 
 def run_app():
