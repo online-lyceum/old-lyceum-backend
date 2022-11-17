@@ -115,3 +115,19 @@ class JsonResponse(web.Response):
             text=answer,
             content_type='application/json'
         )
+
+
+class ImTeapotResponse(web.Response):
+    def __init__(self):
+        super(ImTeapotResponse, self).__init__(
+            status=418,
+            reason='You are so stupid that you can not use declared interface'
+        )
+
+
+class ConflictResponse(web.Response):
+    def __init__(self):
+        super(ConflictResponse, self).__init__(
+            status=409,
+            reason='Some description'
+        )

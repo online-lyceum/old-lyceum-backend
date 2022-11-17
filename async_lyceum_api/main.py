@@ -251,6 +251,7 @@ async def create_lesson(name, start_time, end_time, weekday, week=None,
                                     for subgroup_row in subgroups])}
                     ON CONFLICT DO NOTHING;
             ''')
+        return lesson_id
 
 
 @routes.view('/')
@@ -369,9 +370,8 @@ class LessonsOfClass(web.View):
     async def post(self):
         data = await self.request.json()
         class_id = int(self.request.match_info['class_id'])
-        print(data)
-        await create_lesson(class_id=class_id, **data)
-        return JsonResponse({'out': 1})
+        lesson_id = await create_lesson(class_id=class_id, **data)
+        return JsonResponse({'lesson_id': lesson_id})
 
 
 async def initialize_database(args):
