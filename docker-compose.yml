@@ -3,6 +3,8 @@ services:
   async_lyceum_api:
     image: async-lyceum-api
     restart: always
+    ports:
+      - "8000:80"
     depends_on:
       - "postgres"
     env_file:
