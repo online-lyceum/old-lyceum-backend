@@ -10,24 +10,13 @@ pipeline {
     }
     triggers { pollSCM('* * * * *') }
     stages {
-        stage("Create a venv") {
-            when { not { expression { return fileExists ('./venv') } } }
-            steps {
-                sh 'python3 -m venv ./venv'
-            }
-        }
         stage("Build image") {
             steps {
-                sh './venv/bin/python3 -m pip install -r ./requirements_dev.txt'
-                sh 'rm -rf dist'
-                sh './venv/bin/python3 setup.py sdist bdist_wheel'
                 sh 'docker build -t async-lyceum-api .'
             }
         }
         stage("Run images") {
             steps {
-                sh 'docker-compose stop postgres'
-                sh 'docker-compose rm postgres'
                 sh 'docker-compose up -d'
             }
         }
