@@ -269,10 +269,10 @@ class Class(web.View):
     async def get(self):
         school_id = int(self.request.match_info['school_id'])
         async with app.pool.acquire() as connection:
-            result = await connection.fetch('''
+            result = await connection.fetch(f'''
                     SELECT * FROM Class
-                    WHERE class_id = '{}'
-            '''.format(school_id))
+                        WHERE school_id = '{school_id}'
+            ''')
         return JsonResponse({
             'school_id': school_id,
             'classes': [dict(x) for x in result]
