@@ -46,11 +46,9 @@ async def create_db(args):
         user=args.user,
         password=args.postgres_secret
     )
-    try:
-        await conn.execute(f"CREATE DATABASE {args.database}")
-    except asyncpg.exceptions.DuplicateDatabaseError:
-        pass
-    await conn.execute('''
-                DROP SCHEMA public CASCADE;
-                CREATE SCHEMA public;
-            ''')
+    await conn.execute(f'''
+            DROP DATABASE IF EXISTS {args.database} WITH (FORCE)
+    ''')
+    await conn.execute(f'''
+            CREATE DATABASE {args.database} OWNER {args.user}
+    ''')
