@@ -1,157 +1,78 @@
 # Асинхронная версия API расписания для проекта Лицей в Цифре
 
-## Назначение
-Данное API предназначено для получения и создания уроков в системе 
-"Лицей в цифре". Он позволяет ученикам и учителям смотреть своё расписание, 
-учителя также имеют возможность создавать и редактировать расписание. 
+### [Пользовательская документация на swagger](https://swagger.lava-land.ru/)
 
+## Быстрая установка через Github 
+### Данный вид установки не поддерживает изменение исходного кода.
+### Необходимые пакеты
+Установите в вашу систему python3, python3-pip, python3-venv и docker.
 
-## Подключение API
-### Домены:
-У API есть две версии stable и dev, стабильная и нестабильная соответственно.
-Если ваше приложение находится на стадии разработки, рекомендуется использовать
-dev версию API.
-
-Stable: https://async-api.lava-land.ru
-Dev: https://test-async-api.lava-land.ru
-
-### Как написать запрос
-Чтобы получить данные из API, необходимо послать GET запрос,
-состоящий из двух частей: домен и URL-путь. Запись URL-пути всегда начинается
-с символа `/`. Также у нас принято не писать `/` в конце запроса.
-Например, https://test-async-api.lava-land.ru/school 
-вернёт список всех школ. В данном примере URL-путь это `/school`. Далее для
-обозначения запроса вместо https://test-async-api.lava-land.ru/school будет 
-использоваться `/school`. А также под терминами URL и адрес будет 
-подразумеваться URL-путь.
-
-Названия URL запросов выбираются на основе REST-API. 
-Знать что это такое необязательно. Детальнее почитать об этом можно 
-[тут](https://habr.com/ru/post/483202/"). Говоря коротко, это способ именования
-запросов, в котором используется следующая схема. `/объект` - чтобы получить 
-список таких объектов. И `/объект/уникальный_номер_объекта` - чтобы получить 
-объект с заданным в URL уникальным номером. В нашей системе принято завершать
-запрос объектом, а не уникальным номером. Например, 
-вот корректный запрос `/school/1/class` - это список классов в школе,
-а вот некорректный `/school/1`, он работать не будет. Обратите внимание, что
-для сокращения вместо `{уникальный_номер_объекта}` в документации 
-используется `1`. 
-
-
-### Как получить информацию из запроса
-Данные в теле запроса (в разных системах встречаются названия body, data 
-или text) передаются в формате JSON. ВСЕГДА любой запрос это словарь, внутри
-этого словаря могут быть списки, строки, числа, булевы значения, 
-но тело запроса должно быть словарём.
-
-Ответ от сервера на запрос получения списка объектов (например `/school`) - это 
-словарь с параметрами запроса и результатами поиска. Например, для `/school`
-ответом будет следующий JSON `{"schools": [...]}`. А для `/school/1/class` 
-`{"class_id": 1, "classes": [...]}`. 
-
-`[...]` - это список объектов, содержимое
-таких списков будет приведено далее.
-
-Ответ от сервера на запрос получения объекта - это JSON с атрибутами 
-(свойствами, параметрами) объекта. ПРОДОЛЖЕНИЕ СЛЕДУЕТ
-
-### Список доступных URL:
-`/school`
-
-`/school/1/class`
-
-`/school/1/lesson`
-
-`/class/1/lesson`
-
-
-## Setup from GitHub (Without development mode)
-### Install packages
-Install python3-pip and python3-venv packages.
-
-### Create venv and install package
+### Создание виртуального окружения
+Клонировать репозиторий не надо.
 ```shell
-python3 -m venv venv
-source ./venv/bin/activate
-pip3 install -r requirements.txt
-pip3 install "git+https://github.com/prostoLavr/
-              async_lyceum_api.git"
+python3 -m venv venv  # Создание окружения
+source ./venv/bin/activate  # Активация окружения
+# Установка кода из GitHub через pip
+pip3 install "git+https://github.com/prostoLavr/async_lyceum_api.git"
 ```
-### Run
+### Запуск
 ```shell
-# Setup postgresql
+# Запуск базы данных PostgreSQL
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
                  -p "5432:5432" --name "postgres" postgres:15.1
-
-# Uncomment ot recreate db if it exists
-# psql -h 0.0.0.0 -p 5432 -U postgres -c "DROP DATABASE db" 
-psql -h 0.0.0.0 -p 5432 -U postgres -c "CREATE DATABASE db"
-
-# See "async_lyceum_api --help" for more arguments
+# Запуск проекта. Чтобы узнать больше, введите async_lyceum_api --help
 async_lyceum_api --web-port 8080
 ```
 
-## Setup from source code in Python virtual environment
-### Install packages
-Install python3, python3-pip, python3-venv and docker. 
-Instead docker you can install postgres 15.1 but docker is recommended.
+## Установка из исходников в виртуальное окружение
+### Самый удобный способ дла разботки API.
+### Необходимые пакеты
+Установите python3, python3-pip, python3-venv и docker. 
+Вместо docker вы можете использовать нативно установленную postgres 15.1, 
+но использование docker предпочтительнее.
 
-### Clone source code
+### Клонировение исходного кода
 ```shell
 git clone https://github.com/prostoLavr/async_lyceum_api.git
 ```
-### Initialize new virtual environment
+### Создание виртуального окружения
 ```shell
 python3 -m venv venv
 source ./venv/bin/activate
-pip3 install -r requirements.txt
 ```
-### Initialize development mode
-Development mode is installing real-time updating python package.
-It's useful to developers because you don't need building and
-installing python package after edits.
+### Инициализация режима разработки
+Режим разработки это установка python пакета, 
+обновляющегося в реальном времени. Это полезно для разработки, так как
+не нужно каждый раз пересобирать и переустанавливать пакет, но после
+установки собранного whl пакета этот режим деактивируется. 
 ```shell
-pip3 install -e .  # <- This point in the end is important!
+pip3 install -e .  # <- Точка в конце обязательна!
 ```
 
-### Run native development mode
+### Запуск в режеме для разрабоки
 ```shell
-# Setup postgresql
+# Запуск postgresql в docker
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
                  -p "5432:5432" --name "postgres" postgres:15.1
 
-# Uncomment ot recreate db if it exists
-# psql -h 0.0.0.0 -p 5432 -U postgres -c "DROP DATABASE db" 
-psql -h 0.0.0.0 -p 5432 -U postgres -c "CREATE DATABASE db"
-
-# See "async_lyceum_api --help" for more arguments
+# Запустите "async_lyceum_api --help" чтобы узнать больше доступных аргументов.
 async_lyceum_api --web-port 8080
 ```
 
-## Setup from source code in Docker
+## Установка в docker образ
 
-### Install packages
-Install python3-pip python3-venv, docker and docker-compose packages.
+### Необходимые пакеты
+Установите в вашу систему docker и docker-compose.
 
-### Clone source code
+### Клонирование исходного кода
 ```shell
 git clone https://github.com/prostoLavr/async_lyceum_api.git
 ```
-### Initialize new virtual environment
-```shell
-python3 -m venv venv
-source ./venv/bin/activate
-pip3 install -r requirements.txt
-```
+Скорее всего вы хотите проверить работу API через свой браузер. Для этого 
 
-### Build python wheel package
-This command will create python wheel file in dist directory.
+### Сборка пакета и запуск проекта
+Использование `-f docker-compose-dev.yml` открывать порт 8080
 ```shell
-python3 setup.py sdist bdist_wheel
-```
-
-### Build Docker image and up docker-compose services
-```shell
-docker build -t async-lyceum-api .  # <- This point in the end is important!
-docker-compose up -d
+docker build -t async-lyceum-api .  # <- Точка в конце обязательна!
+docker-compose up -d -f docker-compose-dev.yml
 ```
