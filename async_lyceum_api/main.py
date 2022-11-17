@@ -359,10 +359,17 @@ async def initialize_database(args):
     await create_db(args)
     await create_tables()
     await create_school('Лицей №2', 'Иркутск')
+    await create_school('Школа №35', 'Иркутск')
     await create_class(1, 10, 'Б'),
+    await create_class(1, 10, 'В'),
+    await create_teacher('Мария Александровна')
     await create_teacher('Светлана Николаевна')
     await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
                         class_id=1, teacher_id=1)
+    await create_lesson('Алгебра и начало анализа', time(8, 35), time(9, 5), 0,
+                        class_id=1, teacher_id=2)
+    await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
+                        class_id=2, teacher_id=2)
 
 loop.run_until_complete(initialize_database(console_args))
 

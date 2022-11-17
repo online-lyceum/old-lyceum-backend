@@ -2,8 +2,11 @@ from dataclasses import dataclass
 from datetime import time
 from typing import Optional
 import json
+import logging
 
 from aiohttp import web
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -18,7 +21,6 @@ class LessonInfo:
 
     @classmethod
     def from_raw(cls, lesson):
-
         return cls(
             class_id=lesson['class_id'],
             name=lesson['name'],
@@ -30,7 +32,7 @@ class LessonInfo:
         )
 
     def to_dict(self):
-        dct = self.__dict__
+        dct = self.__dict__.copy()
         dct.pop('class_id', None)
         dct['start_time'] = [self.start_time.hour,
                              self.start_time.minute]
@@ -55,8 +57,10 @@ class ClassInfo:
 
     def to_dict_with_lessons(self, lessons: list[LessonInfo]):
         dct = self.__dict__
-        dct['lessons'] = [lesson.to_dict() for lesson in lessons
-                                if lesson.class_id == self.class_id]
+        dct['lessons'] = []
+        for lesson in lessons:
+            if lesson.class_id == self.class_id:
+                dct['lessons'].append(lesson.to_dict())
         return dct
 
 
@@ -98,7 +102,6 @@ class LessonFormer:
         if len(self.classes) > 1:
             raise ValueError("Expected one class but more was added")
         return self.classes[0].to_dict_with_lessons(self.lessons)
-
 
 
 class JsonResponse(web.Response):
