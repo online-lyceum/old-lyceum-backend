@@ -159,10 +159,15 @@ async def create_class(school_id, number, letter):
                 ('{res['class_id']}', 'default')
             ON CONFLICT DO NOTHING;
         ''')
+        return res['class_id']
 
 
 async def create_lesson(name, start_time, end_time, weekday, week=None,
                         teacher_id=None, *, class_id=None, subgroup_id=None):
+    if isinstance(start_time, list):
+        start_time = time(*start_time)
+    if isinstance(end_time, list):
+        end_time = time(*end_time)
     if class_id is None and subgroup_id is None:
         raise TypeError('Set class_id or subgroup_id')
     async with app.pool.acquire() as conn:
@@ -278,6 +283,13 @@ class Class(web.View):
             'classes': [dict(x) for x in result]
         })
 
+    async def post(self):
+        data = await self.request.json()
+        school_id = int(self.request.match_info['school_id'])
+        number, letter = int(data['number']), data['letter']
+        class_id = await create_class(school_id, number, letter)
+        return JsonResponse({'class_id': class_id})
+
 
 @routes.view('/school/{school_id}/lesson')
 class Lesson(web.View):
@@ -354,6 +366,13 @@ class LessonsOfClass(web.View):
             answer.add_lessons([LessonInfo(**lesson) for lesson in lessons])
             return JsonResponse(answer.class_to_dict())
 
+    async def post(self):
+        data = await self.request.json()
+        class_id = int(self.request.match_info['class_id'])
+        print(data)
+        await create_lesson(class_id=class_id, **data)
+        return JsonResponse({'out': 1})
+
 
 async def initialize_database(args):
     await create_db(args)
@@ -362,8 +381,8 @@ async def initialize_database(args):
     await create_school('Школа №35', 'Иркутск')
     await create_class(1, 10, 'Б'),
     await create_class(1, 10, 'В'),
-    await create_teacher('Мария Александровна')
     await create_teacher('Светлана Николаевна')
+    await create_teacher('Мария Александровна')
     await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
                         class_id=1, teacher_id=1)
     await create_lesson('Алгебра и начало анализа', time(8, 35), time(9, 5), 0,
