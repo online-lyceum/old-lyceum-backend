@@ -1,9 +1,10 @@
 # Асинхронная версия API расписания для проекта Лицей в Цифре
-## Назначение
-Данное API предназначено для получения и создания уроков в системе 
-"Лицей в цифре". Он позволяет ученикам и учителям смотреть своё расписание, 
-учителя также имеют возможность создавать и редактировать расписание. 
+### [Пользовательская документация на swagger](https://swagger.lava-land.ru/)
 
+## Быстрая установка через Github 
+### Данный вид установки не поддерживает изменение исходного кода.
+### Необходимые пакеты
+Установите в вашу систему python3, python3-pip, python3-venv и docker.
 
 ## Подключение API
 ### Домены:
@@ -121,63 +122,74 @@ async_lyceum_api --web-port 8080
 ### Install packages
 Install python3, python3-pip, python3-venv and docker. 
 Instead docker you can install postgres 15.1 but docker is recommended.
-
-### Clone source code
+=======
+### Создание виртуального окружения
+Клонировать репозиторий не надо.
 ```shell
-git clone https://github.com/prostoLavr/async_lyceum_api.git
+python3 -m venv venv  # Создание окружения
+source ./venv/bin/activate  # Активация окружения
+# Установка кода из GitHub через pip
+pip3 install "git+https://github.com/prostoLavr/async_lyceum_api.git"
 ```
-### Initialize new virtual environment
+### Запуск
 ```shell
-python3 -m venv venv
-source ./venv/bin/activate
-pip3 install -r requirements.txt
-```
-### Initialize development mode
-Development mode is installing real-time updating python package.
-It's useful to developers because you don't need building and
-installing python package after edits.
-```shell
-pip3 install -e .  # <- This point in the end is important!
-```
-
-### Run native development mode
-```shell
-# Setup postgresql
+# Запуск базы данных PostgreSQL
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
                  -p "5432:5432" --name "postgres" postgres:15.1
-
-# Uncomment ot recreate db if it exists
-# psql -h 0.0.0.0 -p 5432 -U postgres -c "DROP DATABASE db" 
-psql -h 0.0.0.0 -p 5432 -U postgres -c "CREATE DATABASE db"
-
-# See "async_lyceum_api --help" for more arguments
+# Запуск проекта. Чтобы узнать больше, введите async_lyceum_api --help
 async_lyceum_api --web-port 8080
 ```
 
-## Setup from source code in Docker
+## Установка из исходников в виртуальное окружение
+### Самый удобный способ дла разботки API.
+### Необходимые пакеты
+Установите python3, python3-pip, python3-venv и docker. 
+Вместо docker вы можете использовать нативно установленную postgres 15.1, 
+но использование docker предпочтительнее.
+>>>>>>> dev
 
-### Install packages
-Install python3-pip python3-venv, docker and docker-compose packages.
-
-### Clone source code
+### Клонировение исходного кода
 ```shell
 git clone https://github.com/prostoLavr/async_lyceum_api.git
 ```
-### Initialize new virtual environment
+### Создание виртуального окружения
 ```shell
 python3 -m venv venv
 source ./venv/bin/activate
-pip3 install -r requirements.txt
+```
+### Инициализация режима разработки
+Режим разработки это установка python пакета, 
+обновляющегося в реальном времени. Это полезно для разработки, так как
+не нужно каждый раз пересобирать и переустанавливать пакет, но после
+установки собранного whl пакета этот режим деактивируется. 
+```shell
+pip3 install -e .  # <- Точка в конце обязательна!
 ```
 
-### Build python wheel package
-This command will create python wheel file in dist directory.
+### Запуск в режеме для разрабоки
 ```shell
-python3 setup.py sdist bdist_wheel
+# Запуск postgresql в docker
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
+                 -p "5432:5432" --name "postgres" postgres:15.1
+
+# Запустите "async_lyceum_api --help" чтобы узнать больше доступных аргументов.
+async_lyceum_api --web-port 8080
 ```
 
-### Build Docker image and up docker-compose services
+## Установка в docker образ
+
+### Необходимые пакеты
+Установите в вашу систему docker и docker-compose.
+
+### Клонирование исходного кода
 ```shell
-docker build -t async-lyceum-api .  # <- This point in the end is important!
-docker-compose up -d
+git clone https://github.com/prostoLavr/async_lyceum_api.git
+```
+Скорее всего вы хотите проверить работу API через свой браузер. Для этого 
+
+### Сборка пакета и запуск проекта
+Использование `-f docker-compose-dev.yml` открывать порт 8080
+```shell
+docker build -t async-lyceum-api .  # <- Точка в конце обязательна!
+docker-compose up -d -f docker-compose-dev.yml
 ```
