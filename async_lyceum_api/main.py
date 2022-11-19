@@ -291,6 +291,9 @@ class Class(web.View):
         class_id = await create_class(school_id, number, letter)
         return JsonResponse({'class_id': class_id})
 
+    async def options(self):
+        return web.Response(headers={"Allow": "OPTIONS, GET, HEAD, POST"})
+
 
 @routes.view('/school/{school_id}/lesson')
 class Lesson(web.View):
@@ -342,7 +345,7 @@ class LessonsOfClass(web.View):
             lessons = await conn.fetch(f'''
                     SELECT 
                             Lesson.name,
-                            LessonTime.weekday, 
+                            LessonTime.weekday,
                             LessonTime.week,
                             LessonTime.start_time,
                             LessonTime.end_time,
