@@ -1,7 +1,9 @@
+from datetime import time
+import asyncio
+
 from async_lyceum_api.db.models import *
 from async_lyceum_api.db.base import init_models
 
-import asyncio
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 import sqlalchemy
@@ -78,6 +80,35 @@ async def create_teacher(session: AsyncSession, name: str):
 async def get_teachers(session: AsyncSession):
     query = select(Teacher)
     return await session.stream(query)
+
+
+async def create_lesson(session: AsyncSession, school_id: int,
+                        name: str, start_time: dict[str, int],
+                        end_time: dict[str, int], week: int,
+                        weekday: int, teacher_id: int):
+    new_lesson = Lesson(
+        name=name,
+        start_time=time(hour=start_time['hour'],
+                        minute=start_time['minute']),
+        end_time=time(hour=end_time['hour'],
+                      minute=end_time['minute']),
+        week=week,
+        weekday=weekday,
+        teacher_id=teacher_id,
+        school_id=school_id
+    )
+    session.add(new_lesson)
+    await session.commit()
+    return new_lesson
+
+
+async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
+                                 subgroup_id: int):
+    new_lesson_subgroup = LessonSubgroup(lesson_id=lesson_id,
+                                         subgroup_id=subgroup_id)
+    session.add(new_lesson_subgroup)
+    await session.commit()
+    return new_lesson_subgroup
 
 
 async def initialize_database(args):

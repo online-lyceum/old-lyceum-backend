@@ -123,3 +123,37 @@ async def get_teachers(session: AsyncSession = Depends(get_session)):
     async for teacher, in res:
         teachers.append(Teacher(name=teacher.name))
     return TeacherList(teachers=teachers)
+
+
+@router.post('/school/{school_id}/lesson', response_model=Lesson)
+async def create_lesson(school_id: int, lesson: LessonWithoutID,
+                        session: AsyncSession = Depends(get_session)):
+    lesson = await db_manager.create_lesson(
+        session, school_id=school_id,
+        name=lesson.name, start_time=dict(lesson.start_time),
+        end_time=dict(lesson.end_time), week=lesson.week,
+        weekday=lesson.weekday, teacher_id=lesson.teacher_id
+    )
+    return Lesson(
+        school_id=school_id,
+        lesson_id=lesson.lesson_id,
+        name=lesson.name,
+        start_time=Time(hour=lesson.start_time.hour,
+                        minute=lesson.start_time.minute),
+        end_time=Time(hour=lesson.end_time.hour,
+                      minute=lesson.end_time.minute),
+        week=lesson.week,
+        weekday=lesson.weekday,
+        teacher_id=lesson.teacher_id
+    )
+
+
+@router.post('/subgroup/{subgroup_id}/lesson', response_model=LessonOfGroup)
+async def add_lesson(subgroup_id: int, lesson: OnlyLessonID,
+                     session: AsyncSession = Depends(get_session)):
+    res = await db_manager.add_lesson_to_subgroup(session, lesson.lesson_id,
+                                                  subgroup_id)
+    return LessonOfGroup(
+        subgroup_id=res.subgroup_id,
+        lesson_id=res.lesson_id
+    )

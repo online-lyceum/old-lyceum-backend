@@ -13,10 +13,12 @@ user = os.environ.get('POSTGRES_USER') or 'postgres'
 DATABASE_URL = f"postgresql+asyncpg://{user}:{password}@{host}/{db}"
 
 
-engine = create_async_engine(DATABASE_URL, echo=True)
+engine = create_async_engine(DATABASE_URL)
 Base = declarative_base()
 async_session = sessionmaker(
-    engine, class_=AsyncSession, expire_on_commit=False
+    engine, class_=AsyncSession, expire_on_commit=False, autoflush=False,
+    autocommit=False
+
 )
 
 

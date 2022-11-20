@@ -56,3 +56,29 @@ class Teacher(TeacherWithoutID):
 
 class TeacherList(BaseModel):
     teachers: list[Teacher]
+
+
+class Time(BaseModel):
+    hour: int
+    minute: int
+
+
+class LessonWithoutID(BaseModel):
+    name: str
+    start_time: Time
+    end_time: Time
+    week: int
+    weekday: int
+    teacher_id: int
+
+
+class Lesson(LessonWithoutID):
+    lesson_id: int
+
+
+class OnlyLessonID(BaseModel):
+    lesson_id: int
+
+
+class LessonOfGroup(OnlyLessonID):
+    group_id: int
