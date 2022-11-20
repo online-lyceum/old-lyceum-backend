@@ -2,9 +2,14 @@ from setuptools import setup, find_packages
 
 
 install_requires = [
-    'aiohttp',
     'asyncpg',
-    'uvloop'
+    'pydantic',
+    'fastapi',
+    'uvicorn',
+    'sqlalchemy[asyncio]',
+    'pytest',
+    'requests'
+
 ]
 
 setup(
@@ -18,7 +23,7 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'async_lyceum_api=async_lyceum_api:run_app',
+            'init_models = async_lyceum_api.db.db_manager:run_init_models',
         ]
     }
 )
