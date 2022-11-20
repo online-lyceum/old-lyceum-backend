@@ -7,4 +7,4 @@ RUN pip3 install -r requirements.txt
 COPY setup.py ./
 COPY ./async_lyceum_api ./async_lyceum_api
 RUN pip3 install .
-CMD async_lyceum_api -H $POSTGRES_HOST -S $POSTGRES_PASSWORD
+CMD uvicorn async_lyceum_api.main:app --port=80 --host='0.0.0.0'

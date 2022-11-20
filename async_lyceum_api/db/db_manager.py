@@ -1,8 +1,26 @@
-from datetime import time
+from async_lyceum_api.db.models import School
+from async_lyceum_api.db.base import init_models
 
-import asyncpg
+import asyncio
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
-from async_lyceum_api import app
+
+def run_init_models():
+    asyncio.run(init_models())
+    print("Done")
+
+
+async def get_school_list(session: AsyncSession) -> list[School]:
+    result = await session.execute(select(School))
+    return result.scalars().all()
+
+
+async def add_school(session: AsyncSession, name: str, address: str):
+    new_school = School(name=name, address=address)
+    session.add(new_school)
+    await session.commit()
+    return new_school
 
 
 async def create_tables():
