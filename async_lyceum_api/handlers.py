@@ -9,6 +9,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
 
 
+@router.get('/class/{class_id}/lesson', response_model=LessonListByClassID)
+async def get_lessons(class_id: int,
+                      session: AsyncSession = Depends(get_session)):
+    res = await db_manager.get_lessons_by_class_id(session, class_id)
+    lessons = []
+    async for lesson, in res:
+        lesson_form = Lesson(name=lesson.name,
+                             start_time=Time(hour=lesson.start_time.hour,
+                                             minute=lesson.start_time.minute),
+                             end_time=Time(hour=lesson.end_time.hour,
+                                           minute=lesson.end_time.minute),
+                             week=lesson.week,
+                             weekday=lesson.weekday,
+                             teacher_id=lesson.teacher_id,
+                             lesson_id=lesson.lesson_id)
+        lessons.append(lesson_form)
+    return LessonListByClassID(class_id=class_id, lessons=lessons)
+
+
 @router.get('/', response_model=Message)
 async def get_hello_msg():
     return Message(msg='Hello from FastAPI and Lawrence')
