@@ -6,7 +6,6 @@ from fastapi import APIRouter
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 router = APIRouter()
 
 
@@ -157,3 +156,27 @@ async def add_lesson(subgroup_id: int, lesson: OnlyLessonID,
         subgroup_id=res.subgroup_id,
         lesson_id=res.lesson_id
     )
+
+
+@router.get('/subgroup/{subgroup_id}/lesson', response_model=LessonList)
+async def get_lessons(subgroup_id: int,
+                      session: AsyncSession = Depends(get_session)):
+    lessons = await db_manager.get_lessons(session, subgroup_id)
+    format_lessons = []
+    async for lesson, in lessons:
+        format_lessons.append(Lesson(
+            lesson_id=lesson.lesson_id,
+            name=lesson.name,
+            start_time=Time(
+                hour=lesson.start_time.hour,
+                minute=lesson.start_time.minute
+            ),
+            end_time=Time(
+                hour=lesson.end_time.hour,
+                minute=lesson.end_time.minute
+            ),
+            week=lesson.week,
+            weekday=lesson.weekday,
+            teacher_id=lesson.teacher_id
+        ))
+    return LessonList(subgroup_id=subgroup_id, lessons=format_lessons)

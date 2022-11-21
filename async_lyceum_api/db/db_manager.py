@@ -111,6 +111,12 @@ async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
     return new_lesson_subgroup
 
 
+async def get_lessons(session: AsyncSession, subgroup_id: int):
+    query = select(Lesson).join(LessonSubgroup)
+    query = query.filter(Subgroup.subgroup_id == subgroup_id)
+    return await session.stream(query)
+
+
 async def initialize_database(args):
     await create_db(args)
     await create_tables()
