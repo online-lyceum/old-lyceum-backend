@@ -1,12 +1,11 @@
 from datetime import time
 import asyncio
 
-from async_lyceum_api.db.models import *
+from async_lyceum_api import db
 from async_lyceum_api.db.base import init_models
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-import sqlalchemy
 
 
 def run_init_models():
@@ -15,70 +14,73 @@ def run_init_models():
 
 
 async def get_school_list(session: AsyncSession):
-    return await session.stream(select(School))
+    return await session.stream(select(db.School))
 
 
 async def add_school(session: AsyncSession, name: str, address: str):
-    new_school = School(name=name, address=address)
+    new_school = db.School(name=name, address=address)
     session.add(new_school)
     await session.commit()
     return new_school
 
 
 async def get_classes(session: AsyncSession, school_id: int):
-    query = select(Class.class_id, Class.number, Class.letter, ClassType.name)
-    query = query.join(ClassType).join(School)
-    query = query.filter(School.school_id == school_id)
+    query = select(db.Class.class_id, db.Class.number, db.Class.letter,
+                   db.ClassType.name)
+    query = query.join(db.ClassType).join(db.School)
+    query = query.filter(db.School.school_id == school_id)
     result = await session.stream(query)
     return result
 
 
-async def _get_or_create_class_type_id(session: AsyncSession, class_type_name: str):
-        query = select(ClassType.class_type_id)
-        query = query.filter_by(name=class_type_name)
-        result: sqlalchemy.engine.result.ChunkedIteratorResult = await session.execute(query)
-        class_type_id_tuple = result.one_or_none()
-        if class_type_id_tuple is None:
-            class_type = ClassType(name=class_type_name)
-            session.add(class_type)
-            await session.commit()
-            class_type_id = class_type.class_type_id
-        else:
-            class_type_id = class_type_id_tuple[0]
-        return class_type_id
+async def _get_or_create_class_type_id(session: AsyncSession,
+                                       class_type_name: str):
+    query = select(db.ClassType.class_type_id)
+    query = query.filter_by(name=class_type_name)
+    result = await session.execute(
+        query)
+    class_type_id_tuple = result.one_or_none()
+    if class_type_id_tuple is None:
+        class_type = db.ClassType(name=class_type_name)
+        session.add(class_type)
+        await session.commit()
+        class_type_id = class_type.class_type_id
+    else:
+        class_type_id = class_type_id_tuple[0]
+    return class_type_id
 
 
 async def add_class(session: AsyncSession, school_id: int, number: int,
                     letter: str, class_type: str = "класс"):
     class_type_id = await _get_or_create_class_type_id(session, class_type)
-    new_class = Class(school_id=school_id, number=number,
-                      letter=letter, class_type_id=class_type_id)
+    new_class = db.Class(school_id=school_id, number=number,
+                         letter=letter, class_type_id=class_type_id)
     session.add(new_class)
     await session.commit()
     return new_class, class_type
 
 
 async def create_subgroup(session: AsyncSession, class_id: int, name: str):
-    new_subgroup = Subgroup(class_id=class_id, name=name)
+    new_subgroup = db.Subgroup(class_id=class_id, name=name)
     session.add(new_subgroup)
     await session.commit()
     return new_subgroup
 
 
 async def get_subgroups(session: AsyncSession, class_id: int):
-    query = select(Subgroup).filter_by(class_id=class_id)
+    query = select(db.Subgroup).filter_by(class_id=class_id)
     return await session.stream(query)
 
 
 async def create_teacher(session: AsyncSession, name: str):
-    new_teacher = Teacher(name=name)
+    new_teacher = db.Teacher(name=name)
     session.add(new_teacher)
     await session.commit()
     return new_teacher
 
 
 async def get_teachers(session: AsyncSession):
-    query = select(Teacher)
+    query = select(db.Teacher)
     return await session.stream(query)
 
 
@@ -86,7 +88,7 @@ async def create_lesson(session: AsyncSession, school_id: int,
                         name: str, start_time: dict[str, int],
                         end_time: dict[str, int], week: int,
                         weekday: int, teacher_id: int):
-    new_lesson = Lesson(
+    new_lesson = db.Lesson(
         name=name,
         start_time=time(hour=start_time['hour'],
                         minute=start_time['minute']),
@@ -104,31 +106,21 @@ async def create_lesson(session: AsyncSession, school_id: int,
 
 async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
                                  subgroup_id: int):
-    new_lesson_subgroup = LessonSubgroup(lesson_id=lesson_id,
-                                         subgroup_id=subgroup_id)
+    new_lesson_subgroup = db.LessonSubgroup(lesson_id=lesson_id,
+                                            subgroup_id=subgroup_id)
     session.add(new_lesson_subgroup)
     await session.commit()
     return new_lesson_subgroup
 
 
 async def get_lessons(session: AsyncSession, subgroup_id: int):
-    query = select(Lesson).join(LessonSubgroup)
-    query = query.filter(Subgroup.subgroup_id == subgroup_id)
+    query = select(db.Lesson).join(db.LessonSubgroup)
+    query = query.filter(db.Subgroup.subgroup_id == subgroup_id)
     return await session.stream(query)
 
 
-async def initialize_database(args):
-    await create_db(args)
-    await create_tables()
-    await create_school('Лицей №2', 'Иркутск')
-    await create_school('Школа №35', 'Иркутск')
-    await create_class(1, 10, 'Б'),
-    await create_class(1, 10, 'В'),
-    await create_teacher('Светлана Николаевна')
-    await create_teacher('Мария Александровна')
-    await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
-                        class_id=1, teacher_id=1)
-    await create_lesson('Алгебра и начало анализа', time(8, 35), time(9, 5), 0,
-                        class_id=1, teacher_id=2)
-    await create_lesson('Разговоры о важном', time(8, 0), time(8, 30), 0,
-                        class_id=2, teacher_id=2)
+async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
+    query = select(db.Lesson).join(db.LessonSubgroup)
+    query = query.join(db.Subgroup).join(db.Class)
+    query = query.filter(db.Class.class_id == class_id)
+    return await session.stream(query)
