@@ -32,9 +32,10 @@ pip3 install -e .  # <- Точка в конце обязательна!
 # Запуск postgresql в docker
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
                  -p "5432:5432" --name "postgres" postgres:15.1
-
-# Запустите "async_lyceum_api --help" чтобы узнать больше доступных аргументов.
-async_lyceum_api --web-port 8080
+# Инициализация создания таблиц (вызывается скрипт из этого проекта)
+init_models
+# Запуск gunicorn с uvicorn worker'ом. по адресу 127.0.0.1:8080 
+gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
 ```
 
 ## Установка в docker образ
@@ -47,10 +48,14 @@ async_lyceum_api --web-port 8080
 git clone https://github.com/prostoLavr/async_lyceum_api.git
 ```
 Скорее всего вы хотите проверить работу API через свой браузер. Для этого 
-
+После изменений таблиц базы данных необходимо заново инициализировать создание
+таблиц в базе данных.
 ### Сборка пакета и запуск проекта
-Использование `-f docker-compose-dev.yml` открывать порт 8080
 ```shell
+# Сборка docker образа
 docker build -t async-lyceum-api .  # <- Точка в конце обязательна!
+# Запуск проекта на порту 8080
 docker-compose up -d -f docker-compose-dev.yml
+# Инициализация таблиц в базе данных
+docker-compose exec -d async_lyceum_api init_models
 ```

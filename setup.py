@@ -7,11 +7,13 @@ install_requires = [
     'fastapi',
     'uvicorn',
     'sqlalchemy[asyncio]',
+    'gunicorn',
+    'sqlmodel'
 ]
 
 setup(
     name='async_lyceum_api',
-    version="0.0.2.dev1",
+    version="0.0.2.dev2",
     description='Lyceum API on ',
     platforms=['POSIX'],
     packages=find_packages(),
