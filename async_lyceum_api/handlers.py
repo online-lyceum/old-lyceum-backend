@@ -9,28 +9,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 router = APIRouter()
 
 
-@router.get('/class/{class_id}/lesson',
-            response_model=forms.LessonListByClassID)
-async def get_lessons(class_id: int,
-                      session: AsyncSession = Depends(get_session)):
-    res = await db_manager.get_lessons_by_class_id(session, class_id)
-    lessons = []
-    async for lesson, in res:
-        lesson_form = forms.Lesson(name=lesson.name,
-                                   start_time=forms.Time(
-                                       hour=lesson.start_time.hour,
-                                       minute=lesson.start_time.minute),
-                                   end_time=forms.Time(
-                                       hour=lesson.end_time.hour,
-                                       minute=lesson.end_time.minute),
-                                   week=lesson.week,
-                                   weekday=lesson.weekday,
-                                   teacher_id=lesson.teacher_id,
-                                   lesson_id=lesson.lesson_id)
-        lessons.append(lesson_form)
-    return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
-
-
 @router.get('/', response_model=forms.Message)
 async def get_hello_msg():
     return forms.Message(msg='Hello from FastAPI and Lawrence')
@@ -184,7 +162,7 @@ async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
 @router.get('/subgroup/{subgroup_id}/lesson', response_model=forms.LessonList)
 async def get_lessons(subgroup_id: int,
                       session: AsyncSession = Depends(get_session)):
-    lessons = await db_manager.get_lessons(session, subgroup_id)
+    lessons = await db_manager.get_lessons_by_subgroup_id(session, subgroup_id)
     format_lessons = []
     async for lesson, in lessons:
         format_lessons.append(forms.Lesson(
@@ -203,3 +181,25 @@ async def get_lessons(subgroup_id: int,
             teacher_id=lesson.teacher_id
         ))
     return forms.LessonList(subgroup_id=subgroup_id, lessons=format_lessons)
+
+
+@router.get('/class/{class_id}/lesson',
+            response_model=forms.LessonListByClassID)
+async def get_lessons(class_id: int,
+                      session: AsyncSession = Depends(get_session)):
+    res = await db_manager.get_lessons_by_class_id(session, class_id)
+    lessons = []
+    async for lesson, in res:
+        lesson_form = forms.Lesson(name=lesson.name,
+                                   start_time=forms.Time(
+                                       hour=lesson.start_time.hour,
+                                       minute=lesson.start_time.minute),
+                                   end_time=forms.Time(
+                                       hour=lesson.end_time.hour,
+                                       minute=lesson.end_time.minute),
+                                   week=lesson.week,
+                                   weekday=lesson.weekday,
+                                   teacher_id=lesson.teacher_id,
+                                   lesson_id=lesson.lesson_id)
+        lessons.append(lesson_form)
+    return forms.LessonListByClassID(class_id=class_id, lessons=lessons)

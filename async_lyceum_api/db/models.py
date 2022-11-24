@@ -11,11 +11,12 @@ class School(Base):
 
     school_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
-    name = Column(String, unique=True)
+    name = Column(String)
     address = Column(String)
 
 
 class ClassType(Base):
+    """Тип класса - курс, класс, группа и т.д."""
     __tablename__ = "class_types"
     class_type_id = Column(Integer, autoincrement=True, primary_key=True,
                            index=True)
@@ -34,6 +35,7 @@ class Class(Base):
 
 
 class Subgroup(Base):
+    """Подгруппы в классе"""
     __tablename__ = "subgroups"
 
     subgroup_id = Column(Integer, autoincrement=True, primary_key=True,
@@ -46,7 +48,7 @@ class Teacher(Base):
     __tablename__ = "teachers"
 
     teacher_id = Column(Integer, autoincrement=True, primary_key=True,
-                       index=True)
+                        index=True)
     name = Column(String)
 
 
@@ -65,8 +67,8 @@ class Lesson(Base):
 
 
 class LessonSubgroup(Base):
+    """Отношение уроков и подгрупп. У какой подгруппы, какие уроки.
+    И какие подгруппы будут на уроке."""
     __tablename__ = "lesson_subgroups"
-    lesson_subgroup_id = Column(Integer, autoincrement=True, primary_key=True,
-                                index=True)
-    lesson_id = Column(ForeignKey('lessons.lesson_id'))
-    subgroup_id = Column(ForeignKey('subgroups.subgroup_id'))
+    lesson_id = Column(ForeignKey('lessons.lesson_id'), primary_key=True)
+    subgroup_id = Column(ForeignKey('subgroups.subgroup_id'), primary_key=True)
