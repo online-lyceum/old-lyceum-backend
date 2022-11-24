@@ -5,7 +5,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import text
 import asyncpg
 
 
@@ -29,7 +28,7 @@ async def connect_create_if_not_exists(user, database, password, host):
             host=host
         )
         await sys_conn.execute(
-            text(f'CREATE DATABASE "{database}" OWNER "{user}"')
+            f'CREATE DATABASE "{database}" OWNER "{user}"'
         )
         await sys_conn.close()
 
