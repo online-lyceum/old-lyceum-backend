@@ -15,8 +15,14 @@ git clone https://github.com/prostoLavr/async_lyceum_api.git
 ```
 ### Создание виртуального окружения
 ```shell
+#Для Linux
 python3 -m venv venv
 source ./venv/bin/activate
+```
+```shell
+#Для Windows
+python -m venv venv
+venv/Scripts/activate.bat
 ```
 ### Инициализация режима разработки
 Режим разработки это установка python пакета, 
