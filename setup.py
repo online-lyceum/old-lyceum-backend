@@ -7,13 +7,12 @@ install_requires = [
     'fastapi',
     'uvicorn',
     'sqlalchemy[asyncio]',
-    'gunicorn',
-    'sqlmodel'
+    'gunicorn'
 ]
 
 setup(
     name='async_lyceum_api',
-    version="0.0.2.dev2",
+    version="0.0.2.dev3",
     description='Lyceum API on ',
     platforms=['POSIX'],
     packages=find_packages(),
@@ -23,6 +22,7 @@ setup(
     entry_points={
         'console_scripts': [
             'init_models = async_lyceum_api.db.db_manager:run_init_models',
+            'init_db = async_lyceum_api.db.create_base:run_init_db',
         ]
     }
 )
