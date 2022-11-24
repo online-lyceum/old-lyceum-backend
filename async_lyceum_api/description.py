@@ -1,4 +1,4 @@
-with open('./async_lyceum_api/description.md') as file:
+with open('./async_lyceum_api/description.md', encoding='utf-8') as file:
     description = file.read()
 
 application_metadata = {
