@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 
-host = os.environ.get('POSTGRES_HOST') or '0.0.0.0'
+host = os.environ.get('POSTGRES_HOST') or '127.0.0.1'
 db = os.environ.get('POSTGRES_DB') or 'db'
 password = os.environ.get('POSTGRES_PASSWORD') or 'password'
 user = os.environ.get('POSTGRES_USER') or 'postgres'
