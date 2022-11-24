@@ -36,8 +36,7 @@ pip3 install -e .  # <- Точка в конце обязательна!
 ### Запуск в режиме для разработки
 ```shell
 # Запуск postgresql в docker
-docker run --rm -it -e POSTGRES_PASSWORD="password" -d \
-                 -p "5432:5432" --name "postgres" postgres:15.1
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
 # Инициализация создания таблиц (вызывается скрипт из этого проекта)
 init_models
 # Запуск gunicorn с uvicorn worker'ом. по адресу 127.0.0.1:8080 
