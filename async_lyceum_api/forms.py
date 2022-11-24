@@ -88,9 +88,11 @@ class LessonList(BaseModel):
     subgroup_id: int
     lessons: list[Lesson]
 
+
 class LessonListOfSubgroups(BaseModel):
     class_id: int
     lesson_list: list[LessonList]
+
 
 class LessonListByClassID(BaseModel):
     class_id: int
