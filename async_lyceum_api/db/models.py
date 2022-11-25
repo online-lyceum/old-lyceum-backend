@@ -28,7 +28,7 @@ class Class(Base):
 
     class_id = Column(Integer, autoincrement=True, primary_key=True,
                       index=True)
-    school_id = Column(ForeignKey('schools.school_id'))
+    school_id = Column(ForeignKey('schools.school_id', ondelete='DELETE'))
     number = Column(Integer)
     letter = Column(String)
     class_type_id = Column(ForeignKey('class_types.class_type_id'))
@@ -40,7 +40,7 @@ class Subgroup(Base):
 
     subgroup_id = Column(Integer, autoincrement=True, primary_key=True,
                          index=True)
-    class_id = Column(ForeignKey('classes.class_id'))
+    class_id = Column(ForeignKey('classes.class_id', ondelete='DELETE'))
     name = Column(String)
 
 
@@ -62,13 +62,19 @@ class Lesson(Base):
     end_time = Column(Time)
     week = Column(Integer)
     weekday = Column(Integer)
-    teacher_id = Column(ForeignKey('teachers.teacher_id'))
-    school_id = Column(ForeignKey('schools.school_id'))
+    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='DELETE'))
+    school_id = Column(ForeignKey('schools.school_id', ondelete='DELETE'))
 
 
 class LessonSubgroup(Base):
     """Отношение уроков и подгрупп. У какой подгруппы, какие уроки.
     И какие подгруппы будут на уроке."""
     __tablename__ = "lesson_subgroups"
-    lesson_id = Column(ForeignKey('lessons.lesson_id'), primary_key=True)
-    subgroup_id = Column(ForeignKey('subgroups.subgroup_id'), primary_key=True)
+    lesson_id = Column(
+        ForeignKey('lessons.lesson_id', ondelete='DELETE'),
+        primary_key=True
+    )
+    subgroup_id = Column(
+        ForeignKey('subgroups.subgroup_id', ondelete='DELETE'),
+        primary_key=True
+    )
