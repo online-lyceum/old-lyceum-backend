@@ -127,10 +127,20 @@ async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
 
 
 async def delete_subgroup(session: AsyncSession, subgroup_id: int):
-    row = await session.execute(select(db.Subgroup).where(db.Subgroup.subgroup_id == subgroup_id))
+    row = await session.execute(select(db.Subgroup)
+                                .where(db.Subgroup.subgroup_id == subgroup_id))
     row = row.scalar_one()
     await session.delete(row)
     await session.commit()
 
 
+async def delete_class(session: AsyncSession, class_id: int):
+    res = await get_subgroups(session, class_id)
+    async for subgroup, in res:
+        await delete_subgroup(session, subgroup.subgroup_id)
 
+    row = await session.execute(select(db.Class)
+                                .where(db.Class.class_id == class_id))
+    row = row.scalar_one()
+    await session.delete(row)
+    await session.commit()
