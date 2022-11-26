@@ -6,6 +6,8 @@ from async_lyceum_api.db.base import init_models
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy import exc
+import asyncpg
 
 
 def run_init_models():
@@ -18,10 +20,14 @@ async def get_school_list(session: AsyncSession):
 
 
 async def add_school(session: AsyncSession, name: str, address: str):
-    new_school = db.School(name=name, address=address)
-    session.add(new_school)
-    await session.commit()
-    return new_school
+    query = select(db.School).filter_by(name=name, address=address)
+    try:
+        return (await session.execute(query)).one()[0]
+    except exc.NoResultFound:
+        new_school = db.School(name=name, address=address)
+        session.add(new_school)
+        await session.commit()
+        return new_school
 
 
 async def get_classes(session: AsyncSession, school_id: int):
@@ -53,18 +59,29 @@ async def _get_or_create_class_type_id(session: AsyncSession,
 async def add_class(session: AsyncSession, school_id: int, number: int,
                     letter: str, class_type: str = "класс"):
     class_type_id = await _get_or_create_class_type_id(session, class_type)
-    new_class = db.Class(school_id=school_id, number=number,
-                         letter=letter, class_type_id=class_type_id)
-    session.add(new_class)
-    await session.commit()
-    return new_class, class_type
+    query = select(db.Class).filter_by(
+            school_id=school_id, number=number,
+            letter=letter, class_type_id=class_type_id
+        )
+    try:
+        return (await session.execute(query)).one()[0], class_type
+    except exc.NoResultFound:
+        new_class = db.Class(school_id=school_id, number=number,
+                             letter=letter, class_type_id=class_type_id)
+        session.add(new_class)
+         await session.commit()
+        return new_class, class_type
 
 
 async def create_subgroup(session: AsyncSession, class_id: int, name: str):
-    new_subgroup = db.Subgroup(class_id=class_id, name=name)
-    session.add(new_subgroup)
-    await session.commit()
-    return new_subgroup
+    query = select(db.Subgroup).filter_by(class_id=class_id, name=name)
+    try:
+        return (await session.execute(query)).one()[0]
+    except exc.NoResultFound:
+        new_subgroup = db.Subgroup(class_id=class_id, name=name)
+        session.add(new_subgroup)
+        await session.commit()
+        return new_subgroup
 
 
 async def get_subgroups(session: AsyncSession, class_id: int):

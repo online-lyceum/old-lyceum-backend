@@ -3,6 +3,7 @@ from sqlalchemy import String
 from sqlalchemy import Integer
 from sqlalchemy import Time
 from sqlalchemy import ForeignKey
+from sqlalchemy import UniqueConstraint
 from async_lyceum_api.db.base import Base
 
 
@@ -13,6 +14,9 @@ class School(Base):
                        index=True)
     name = Column(String)
     address = Column(String)
+    __table_args__ = (
+        UniqueConstraint('name', 'address', name='uq_name_address'),
+    )
 
 
 class ClassType(Base):
@@ -20,7 +24,7 @@ class ClassType(Base):
     __tablename__ = "class_types"
     class_type_id = Column(Integer, autoincrement=True, primary_key=True,
                            index=True)
-    name = Column(String)
+    name = Column(String, unique=True)
 
 
 class Class(Base):
@@ -33,6 +37,11 @@ class Class(Base):
     letter = Column(String)
     class_type_id = Column(ForeignKey('class_types.class_type_id'))
 
+    __table_args__ = (
+        UniqueConstraint('school_id', 'number', 'letter', 'class_type_id',
+                         name='uq_class'),
+    )
+
 
 class Subgroup(Base):
     """Подгруппы в классе"""
@@ -42,6 +51,10 @@ class Subgroup(Base):
                          index=True)
     class_id = Column(ForeignKey('classes.class_id', ondelete='CASCADE'))
     name = Column(String)
+
+    __table_args__ = (
+        UniqueConstraint('class_id', 'name', name='uq_class_id_name'),
+    )
 
 
 class Teacher(Base):
