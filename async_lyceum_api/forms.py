@@ -97,3 +97,7 @@ class LessonListOfSubgroups(BaseModel):
 class LessonListByClassID(BaseModel):
     class_id: int
     lessons: list[Lesson]
+
+
+class DeletingMessage(Message):
+    id: int

@@ -205,13 +205,13 @@ async def get_lessons(class_id: int,
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
 
 
-@router.delete('/subgroup/{subgroup_id}', response_model=forms.Message)
+@router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage)
 async def delete_subgroup(subgroup_id: int, session: AsyncSession = Depends(get_session)):
     await db_manager.delete_subgroup(session, subgroup_id)
-    return forms.Message(msg=f'Delete subgroup by id: {subgroup_id}')
+    return forms.DeletingMessage(msg='Delete subgroup', id=subgroup_id)
 
 
-@router.delete('/class/{class_id}', response_model=forms.Message)
+@router.delete('/class/{class_id}', response_model=forms.DeletingMessage)
 async def delete_class(class_id: int, session: AsyncSession = Depends(get_session)):
     await db_manager.delete_class(session, class_id)
-    return forms.Message(msg=f'Delete class by id: {class_id}')
+    return forms.DeletingMessage(msg='Delete class', id=class_id)
