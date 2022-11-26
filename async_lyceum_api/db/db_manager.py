@@ -144,3 +144,18 @@ async def delete_class(session: AsyncSession, class_id: int):
     row = row.scalar_one()
     await session.delete(row)
     await session.commit()
+
+
+async def delete_school(session: AsyncSession, school_id: int):
+    query = select(db.Class).join(db.School)
+    query = query.filter(db.School.school_id == school_id)
+    async for class_in_res, in await session.stream(query):
+        await delete_class(session, class_in_res.class_id)
+
+    row = await session.execute(select(db.School)
+                                .where(db.School.school_id == school_id))
+    row = row.scalar_one()
+    await session.delete(row)
+    await session.commit()
+
+

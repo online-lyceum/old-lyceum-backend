@@ -215,3 +215,12 @@ async def delete_subgroup(subgroup_id: int, session: AsyncSession = Depends(get_
 async def delete_class(class_id: int, session: AsyncSession = Depends(get_session)):
     await db_manager.delete_class(session, class_id)
     return forms.DeletingMessage(msg='Delete class', id=class_id)
+
+
+@router.delete('/school/{school_id}', response_model=forms.DeletingMessage)
+async def delete_school(school_id: int, session: AsyncSession = Depends(get_session)):
+    await db_manager.delete_school(session, school_id)
+    return forms.DeletingMessage(msg='Delete school', id=school_id)
+
+
+
