@@ -124,3 +124,13 @@ async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
     query = query.join(db.Subgroup).join(db.Class)
     query = query.filter(db.Class.class_id == class_id)
     return await session.stream(query)
+
+
+async def delete_subgroup(session: AsyncSession, subgroup_id: int):
+    row = await session.execute(select(db.Subgroup).where(db.Subgroup.subgroup_id == subgroup_id))
+    row = row.scalar_one()
+    await session.delete(row)
+    await session.commit()
+
+
+

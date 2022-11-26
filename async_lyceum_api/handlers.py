@@ -203,3 +203,9 @@ async def get_lessons(class_id: int,
                                    lesson_id=lesson.lesson_id)
         lessons.append(lesson_form)
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
+
+
+@router.post('/subgroup/{subgroup_id}', response_model=forms.Message)
+async def delete_subgroup(subgroup_id: int, session: AsyncSession = Depends(get_session)):
+    await db_manager.delete_subgroup(session, subgroup_id)
+    return forms.Message(msg='Delete subgroup')
