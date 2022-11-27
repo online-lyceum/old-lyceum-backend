@@ -5,9 +5,14 @@ class Message(BaseModel):
     msg: str
 
 
+class CityList(BaseModel):
+    cities: list[str]
+
+
 class SchoolWithoutID(BaseModel):
     name: str
-    address: str
+    city: str
+    place: str
 
 
 class School(SchoolWithoutID):

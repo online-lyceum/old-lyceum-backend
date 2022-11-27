@@ -15,16 +15,25 @@ async def get_hello_msg():
     return forms.Message(msg='Hello from FastAPI and Lawrence')
 
 
+@router.get('/city', response_model=forms.CityList)
+async def get_cities(session: AsyncSession = Depends(get_session)):
+    cities = []
+    async for city, in await db_manager.get_cities(session):
+        cities.append(city)
+    return forms.CityList(cities=cities)
+
+
 @router.get('/school', response_model=forms.SchoolList)
 async def get_schools(session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_school_list(session)
     schools = []
-    async for school, in res:
+    async for school_id, name, city, place in res:
         schools.append(
             forms.School(
-                school_id=school.school_id,
-                name=school.name,
-                address=school.address
+                school_id=school_id,
+                name=name,
+                city=city,
+                place=place
             )
         )
     return forms.SchoolList(schools=schools)
@@ -33,11 +42,12 @@ async def get_schools(session: AsyncSession = Depends(get_session)):
 @router.post('/school', response_model=forms.School)
 async def create_school(school: forms.SchoolWithoutID,
                         session: AsyncSession = Depends(get_session)):
-    new_school = await db_manager.add_school(session, **dict(school))
+    new_school, address = await db_manager.add_school_with_address(session, **dict(school))
     return forms.School(
         school_id=new_school.school_id,
         name=new_school.name,
-        address=new_school.address
+        city=address.city,
+        place=address.place
     )
 
 

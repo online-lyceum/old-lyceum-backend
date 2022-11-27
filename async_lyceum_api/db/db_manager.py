@@ -7,7 +7,6 @@ from async_lyceum_api.db.base import init_models
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy import exc
-import asyncpg
 
 
 def run_init_models():
@@ -16,18 +15,39 @@ def run_init_models():
 
 
 async def get_school_list(session: AsyncSession):
-    return await session.stream(select(db.School))
+    query = select(db.School.school_id, db.School.name,
+                   db.Address.city, db.Address.place)
+    query = query.select_from(db.School)
+    query = query.join(db.Address)
+
+    return await session.stream(query)
 
 
-async def add_school(session: AsyncSession, name: str, address: str):
-    query = select(db.School).filter_by(name=name, address=address)
+async def get_cities(session: AsyncSession):
+    query = select(db.Address.city).distinct()
+    return await session.stream(query)
+
+
+async def add_school_with_address(session: AsyncSession, name: str,
+                                  city: str, place: str):
+    query = select(db.Address).filter_by(city=city, place=place)
     try:
-        return (await session.execute(query)).one()[0]
+        address = (await session.execute(query)).one()[0]
     except exc.NoResultFound:
-        new_school = db.School(name=name, address=address)
+        new_address = db.Address(city=city, place=place)
+        session.add(new_address)
+        await session.flush([new_address])
+        address = new_address
+
+    query = select(db.School).filter_by(name=name,
+                                        address_id=address.address_id)
+    try:
+        return (await session.execute(query)).one()[0], address
+    except exc.NoResultFound:
+        new_school = db.School(name=name, address_id=address.address_id)
         session.add(new_school)
         await session.commit()
-        return new_school
+        return new_school, address
 
 
 async def get_classes(session: AsyncSession, school_id: int):
@@ -69,7 +89,7 @@ async def add_class(session: AsyncSession, school_id: int, number: int,
         new_class = db.Class(school_id=school_id, number=number,
                              letter=letter, class_type_id=class_type_id)
         session.add(new_class)
-         await session.commit()
+        await session.commit()
         return new_class, class_type
 
 
@@ -174,5 +194,3 @@ async def delete_school(session: AsyncSession, school_id: int):
     row = row.scalar_one()
     await session.delete(row)
     await session.commit()
-
-
