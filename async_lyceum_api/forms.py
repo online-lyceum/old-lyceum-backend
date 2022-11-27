@@ -7,7 +7,8 @@ class Message(BaseModel):
 
 class SchoolWithoutID(BaseModel):
     name: str
-    address: str
+    city: str
+    place: str
 
 
 class School(SchoolWithoutID):

@@ -19,12 +19,13 @@ async def get_hello_msg():
 async def get_schools(session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_school_list(session)
     schools = []
-    async for school, in res:
+    async for school_id, name, city, place in res:
         schools.append(
             forms.School(
-                school_id=school.school_id,
-                name=school.name,
-                address=school.address
+                school_id=school_id,
+                name=name,
+                city=city,
+                place=place
             )
         )
     return forms.SchoolList(schools=schools)
@@ -37,7 +38,8 @@ async def create_school(school: forms.SchoolWithoutID,
     return forms.School(
         school_id=new_school.school_id,
         name=new_school.name,
-        address=new_school.address
+        city=new_school.city,
+        place=new_school.place
     )
 
 

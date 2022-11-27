@@ -13,9 +13,22 @@ class School(Base):
     school_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
     name = Column(String)
-    address = Column(String)
+    address_id = Column(ForeignKey('addresses.address_id'))
     __table_args__ = (
         UniqueConstraint('name', 'address', name='uq_name_address'),
+    )
+
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    address_id = Column(Integer, autoincrement=True, primary_key=True,
+                        index=True)
+    city = Column(String)
+    place = Column(String)
+
+    __table_args__ = (
+        UniqueConstraint('city', 'place', name='uq_city_place'),
     )
 
 
