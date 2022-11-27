@@ -23,24 +23,31 @@ async def get_school_list(session: AsyncSession):
     return await session.stream(query)
 
 
-async def add_school(session: AsyncSession, name: str, city: str, place: str):
-    query = select(db.Address.address_id).filter_by(city=city, place=place)
+async def get_cities(session: AsyncSession):
+    query = select(db.Address.city).distinct()
+    return await session.stream(query)
+
+
+async def add_school_with_address(session: AsyncSession, name: str,
+                                  city: str, place: str):
+    query = select(db.Address).filter_by(city=city, place=place)
     try:
-        address_id = (await session.execute(query)).one()[0]
+        address = (await session.execute(query)).one()[0]
     except exc.NoResultFound:
         new_address = db.Address(city=city, place=place)
         session.add(new_address)
-        await session.flush(new_address)
-        address_id = new_address.address_id
+        await session.flush([new_address])
+        address = new_address
 
-    query = select(db.School).filter_by(name=name, address_id=address_id)
+    query = select(db.School).filter_by(name=name,
+                                        address_id=address.address_id)
     try:
-        return (await session.execute(query)).one()[0]
+        return (await session.execute(query)).one()[0], address
     except exc.NoResultFound:
-        new_school = db.School(name=name, address_id=address_id)
+        new_school = db.School(name=name, address_id=address.address_id)
         session.add(new_school)
         await session.commit()
-        return new_school
+        return new_school, address
 
 
 async def get_classes(session: AsyncSession, school_id: int):

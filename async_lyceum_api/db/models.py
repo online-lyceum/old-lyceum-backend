@@ -14,8 +14,9 @@ class School(Base):
                        index=True)
     name = Column(String)
     address_id = Column(ForeignKey('addresses.address_id'))
+
     __table_args__ = (
-        UniqueConstraint('name', 'address', name='uq_name_address'),
+        UniqueConstraint('name', 'address_id', name='uq_name_address'),
     )
 
 
