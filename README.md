@@ -35,7 +35,7 @@ pip3 install -e .  # <- Точка в конце обязательна!
 
 ### Запуск в режиме для разработки
 ```shell
-#Для Linux
+#На Linux
 
 # Запуск postgresql в docker
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
@@ -48,6 +48,14 @@ gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.
 ```
 ```shell
 #Для Windows
+
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
+init_db
+init_models
+uvicorn async_lyceum_api.main:app
+```
+```shell
+#На Windows
 
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
 init_db
