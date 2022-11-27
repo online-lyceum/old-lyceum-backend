@@ -53,7 +53,7 @@ class Class(Base):
 
     __table_args__ = (
         UniqueConstraint('school_id', 'number', 'letter', 'class_type_id',
-                         name='uq_class'),
+                         name='uq_class_constraint'),
     )
 
 
