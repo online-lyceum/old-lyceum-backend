@@ -55,7 +55,6 @@ async def create_school(school: forms.SchoolWithoutID,
 async def get_classes(school_id: int,
                       session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_classes(session, school_id=school_id)
-    print(f"{res=}")
     classes = []
     async for x in res:
         classes.append(
