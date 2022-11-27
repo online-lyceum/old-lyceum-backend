@@ -216,20 +216,30 @@ async def get_lessons(class_id: int,
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
 
 
+@router.get('/subgroup/{subgroup_id}/today', response_model=forms.DayLessonList)
+async def get_today_lessons(subgroup_id: int,
+                            session: AsyncSession = Depends(get_session)):
+    res = await db_manager.get_today_lessons_by_subgroup_id(session, subgroup_id)
+    return forms.DayLessonList(lesson)
+
+
 @router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage)
-async def delete_subgroup(subgroup_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_subgroup(subgroup_id: int,
+                          session: AsyncSession = Depends(get_session)):
     await db_manager.delete_subgroup(session, subgroup_id)
     return forms.DeletingMessage(msg='Delete subgroup', id=subgroup_id)
 
 
 @router.delete('/class/{class_id}', response_model=forms.DeletingMessage)
-async def delete_class(class_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_class(class_id: int,
+                       session: AsyncSession = Depends(get_session)):
     await db_manager.delete_class(session, class_id)
     return forms.DeletingMessage(msg='Delete class', id=class_id)
 
 
 @router.delete('/school/{school_id}', response_model=forms.DeletingMessage)
-async def delete_school(school_id: int, session: AsyncSession = Depends(get_session)):
+async def delete_school(school_id: int,
+                        session: AsyncSession = Depends(get_session)):
     await db_manager.delete_school(session, school_id)
     return forms.DeletingMessage(msg='Delete school', id=school_id)
 

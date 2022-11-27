@@ -94,9 +94,14 @@ class LessonList(BaseModel):
     lessons: list[Lesson]
 
 
-class LessonListOfSubgroups(BaseModel):
-    class_id: int
-    lesson_list: list[LessonList]
+class Date(BaseModel):
+    weekday: int
+    day: int
+    month: int
+
+
+class DayLessonList(LessonList):
+    date: Date
 
 
 class LessonListByClassID(BaseModel):

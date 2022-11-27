@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import time, datetime
 import asyncio
 
 from async_lyceum_api import db
@@ -26,6 +26,34 @@ async def get_school_list(session: AsyncSession):
 async def get_cities(session: AsyncSession):
     query = select(db.Address.city).distinct()
     return await session.stream(query)
+
+
+async def _get_lesson_by_subgroup_id_and_weekday(
+        session: AsyncSession,
+        subgroup_id: int,
+        weekday: int):
+    query = select(db.Lesson)
+    query = query.select_from(db.Lesson)
+    query = query.join(db.LessonSubgroup)
+    query = query.filter(db.Subgroup.subgroup_id == subgroup_id)
+    query = query.filter(db.Lesson.weekday == weekday)
+    return await session.stream(query)
+
+
+async def get_today_lessons_by_subgroup_id(session: AsyncSession,
+                                           subgroup_id: int):
+    lessons = await _get_lesson_by_subgroup_id_and_weekday(
+        session, subgroup_id, datetime.today().weekday()
+    )
+    day_end_time = time(0, 0)
+    async for lesson in lessons:
+        lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
+        day_end_time = max(lesson_end_time, day_end_time)
+    if day_end_time < datetime.now().time():
+        lessons = await _get_lesson_by_subgroup_id_and_weekday(
+            session, subgroup_id, (datetime.today().weekday() + 1) % 7
+        )
+    return lessons
 
 
 async def add_school_with_address(session: AsyncSession, name: str,
@@ -98,7 +126,7 @@ async def create_subgroup(session: AsyncSession, class_id: int, name: str):
     try:
         return (await session.execute(query)).one()[0]
     except exc.NoResultFound:
-        new_subgroup = db.Subgroup(class_id=class_id, name=name)
+        new_subgroup = Tdb.Subgroup(class_id=class_id, name=name)
         session.add(new_subgroup)
         await session.commit()
         return new_subgroup
