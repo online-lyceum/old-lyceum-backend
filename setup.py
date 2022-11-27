@@ -12,8 +12,8 @@ install_requires = [
 
 setup(
     name='async_lyceum_api',
-    version="0.0.2.dev3",
-    description='Lyceum API on ',
+    version="0.0.3.dev1",
+    description='Lyceum API',
     platforms=['POSIX'],
     packages=find_packages(),
     include_package_data=True,

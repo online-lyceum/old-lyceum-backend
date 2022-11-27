@@ -5,7 +5,10 @@ from async_lyceum_api.description import application_metadata
 
 
 def create_application():
-    application = FastAPI(**application_metadata)
+    application = FastAPI(openapi_url='/api/openapi.json',
+                          docs_url='/api/docs',
+                          redoc_url='/api/redoc',
+                          **application_metadata)
     application.include_router(router)
     return application
 

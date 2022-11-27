@@ -1,6 +1,6 @@
 # Асинхронная версия API расписания для проекта Лицей в Цифре
-### [Пользовательская документация на Swagger (test)](https://test-async-api.lava-land.ru/docs)
-### [Пользовательская документация на ReDoc (test)](https://test-async-api.lava-land.ru/redoc)
+### [Пользовательская документация на Swagger (test)](https://dev.lava-land.ru/api/docs)
+### [Пользовательская документация на ReDoc (test)](https://dev.lava-land.ru/api/redoc)
 
 ## Установка из исходников в виртуальное окружение
 ### Самый удобный способ дла разработки API.
@@ -45,7 +45,13 @@ init_db
 init_models
 # Запуск gunicorn с uvicorn worker'ом. по адресу 127.0.0.1:8080
 gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
-# Запуск на Windows
+```
+```shell
+#Для Windows
+
+docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
+init_db
+init_models
 uvicorn async_lyceum_api.main:app
 ```
 ```shell

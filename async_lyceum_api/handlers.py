@@ -6,7 +6,8 @@ from fastapi import APIRouter
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-router = APIRouter()
+
+router = APIRouter(prefix='/api')
 
 
 @router.get('/', response_model=forms.Message)
