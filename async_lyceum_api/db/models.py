@@ -7,19 +7,6 @@ from sqlalchemy import UniqueConstraint
 from async_lyceum_api.db.base import Base
 
 
-class School(Base):
-    __tablename__ = "schools"
-
-    school_id = Column(Integer, autoincrement=True, primary_key=True,
-                       index=True)
-    name = Column(String)
-    address_id = Column(ForeignKey('addresses.address_id'))
-
-    __table_args__ = (
-        UniqueConstraint('name', 'address_id', name='uq_name_address'),
-    )
-
-
 class Address(Base):
     __tablename__ = "addresses"
 
@@ -30,6 +17,19 @@ class Address(Base):
 
     __table_args__ = (
         UniqueConstraint('city', 'place', name='uq_city_place'),
+    )
+
+
+class School(Base):
+    __tablename__ = "schools"
+
+    school_id = Column(Integer, autoincrement=True, primary_key=True,
+                       index=True)
+    name = Column(String)
+    address_id = Column(ForeignKey('addresses.address_id'))
+
+    __table_args__ = (
+        UniqueConstraint('name', 'address_id', name='uq_name_address'),
     )
 
 
