@@ -1,6 +1,6 @@
 # Асинхронная версия API расписания для проекта Лицей в Цифре
-### [Пользовательская документация на Swagger (test)](https://test-async-api.lava-land.ru/docs)
-### [Пользовательская документация на ReDoc (test)](https://test-async-api.lava-land.ru/redoc)
+### [Пользовательская документация на Swagger (test)](https://dev.lava-land.ru/api/docs)
+### [Пользовательская документация на ReDoc (test)](https://dev.lava-land.ru/api/redoc)
 
 ## Установка из исходников в виртуальное окружение
 ### Самый удобный способ дла разработки API.
