@@ -1,7 +1,6 @@
 import os
 import asyncio
 
-from sqlalchemy.ext.asyncio import create_async_engine
 import asyncpg
 
 
@@ -34,5 +33,3 @@ async def connect_create_if_not_exists(user, database, password, host):
 def run_init_db():
     asyncio.run(connect_create_if_not_exists(user, db, password, host))
     print('Done')
-
-
