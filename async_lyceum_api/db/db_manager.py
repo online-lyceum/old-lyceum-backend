@@ -126,7 +126,7 @@ async def create_subgroup(session: AsyncSession, class_id: int, name: str):
     try:
         return (await session.execute(query)).one()[0]
     except exc.NoResultFound:
-        new_subgroup = Tdb.Subgroup(class_id=class_id, name=name)
+        new_subgroup = db.Subgroup(class_id=class_id, name=name)
         session.add(new_subgroup)
         await session.commit()
         return new_subgroup
