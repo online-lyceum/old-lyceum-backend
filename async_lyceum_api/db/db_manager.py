@@ -1,8 +1,6 @@
 from datetime import time, datetime
 import asyncio
 
-import sqlalchemy.engine
-
 from async_lyceum_api import db
 from async_lyceum_api.db.base import init_models
 
