@@ -180,7 +180,7 @@ async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
 
 async def get_lessons_by_subgroup_id(session: AsyncSession, subgroup_id: int):
     query = select(db.Lesson).join(db.LessonSubgroup)
-    query = query.filter(db.Subgroup.subgroup_id == subgroup_id)
+    query = query.filter_by(subgroup_id=subgroup_id)
     return await session.stream(query)
 
 
