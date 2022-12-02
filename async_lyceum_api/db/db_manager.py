@@ -180,7 +180,7 @@ async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
 
 async def get_lessons_by_subgroup_id(session: AsyncSession, subgroup_id: int):
     query = select(db.Lesson).join(db.LessonSubgroup)
-    query = query.filter(db.Subgroup.subgroup_id == subgroup_id)
+    query = query.filter_by(subgroup_id=subgroup_id)
     return await session.stream(query)
 
 
@@ -192,33 +192,21 @@ async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
 
 
 async def delete_subgroup(session: AsyncSession, subgroup_id: int):
-    row = await session.execute(select(db.Subgroup)
-                                .where(db.Subgroup.subgroup_id == subgroup_id))
-    row = row.scalar_one()
-    await session.delete(row)
+    query = select(db.Subgroup).filter_by(subgroup_id=subgroup_id)
+    row = await session.execute(query)
+    await session.delete(row.scalar_one())
     await session.commit()
 
 
 async def delete_class(session: AsyncSession, class_id: int):
-    res = await get_subgroups(session, class_id)
-    async for subgroup, in res:
-        await delete_subgroup(session, subgroup.subgroup_id)
-
-    row = await session.execute(select(db.Class)
-                                .where(db.Class.class_id == class_id))
-    row = row.scalar_one()
-    await session.delete(row)
+    query = select(db.Class).filter_by(class_id=class_id)
+    row = await session.execute(query)
+    await session.delete(row.scalar_one())
     await session.commit()
 
 
 async def delete_school(session: AsyncSession, school_id: int):
-    query = select(db.Class).join(db.School)
-    query = query.filter(db.School.school_id == school_id)
-    async for class_in_res, in await session.stream(query):
-        await delete_class(session, class_in_res.class_id)
-
-    row = await session.execute(select(db.School)
-                                .where(db.School.school_id == school_id))
-    row = row.scalar_one()
-    await session.delete(row)
+    query = select(db.School).filter_by(school_id=school_id)
+    row = await session.execute(query)
+    await session.delete(row.scalar_one())
     await session.commit()
