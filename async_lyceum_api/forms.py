@@ -111,3 +111,8 @@ class LessonListByClassID(BaseModel):
 
 class DeletingMessage(Message):
     id: int
+
+
+class DaySubgroupLessons(LessonList):
+    weekday: int
+    week: int

@@ -34,35 +34,47 @@ async def get_cities(session: AsyncSession):
 
 
 
-class SubgroupLessonList:
-    def __init__(self, session: AsyncSession, subgroup_id: int):
+class LessonList:
+    def __init__(self,
+                 session: AsyncSession,
+                 subgroup_id: int = None,
+                 class_id: int = None):
+        if subgroup_id is None and class_id is None:
+            raise TypeError('One of subgroup_id and class_id must be '
+                            'int, but None')
+        self.class_id = class_id
         self.subgroup_id = subgroup_id
         self.session = session
 
     async def get_all_lessons(self):
         query = select(db.Lesson).join(db.LessonSubgroup)
-        query = query.filter_by(subgroup_id=self.subgroup_id)
+        if self.subgroup_id is not None:
+            query = query.filter_by(subgroup_id=self.subgroup_id)
+        else:
+            query = query.filter_by(subgroup_id=self.class_id)
         return await self.session.stream(query)
 
     async def get_current_or_next_day_with_lessons(self) -> tuple[int, list]:
         if await self._has_today_lessons():
-            lessons_stream = await self._get_day_lessons(datetime.today().weekday())
+            logger.debug('Has lessons today')
+            lessons = await self._get_day_lessons(datetime.today().weekday())
             return (
                 datetime.today().weekday(),
-                [x async for x in lessons_stream]
+                lessons
             )
         else:
+            logger.debug('Has not lessons today')
             for i in range(1, 7):
                 weekday = (datetime.today().weekday() + i) % 7
-                lessons_steam = await self._get_day_lessons(weekday)
-                lessons = [x async for x in lessons_steam]
+                lessons = await self._get_day_lessons(weekday)
+                logger.debug(f'Lessons on {weekday=} is {lessons}')
                 if lessons:
                     break
             else:
                 raise my_exc.LessonsNotFound(subgroup_id=self.subgroup_id)
             return weekday, lessons
 
-    async def _get_day_lessons(self, weekday: int, week: int = 0) -> AsyncResult:
+    async def _get_day_lesson_steam(self, weekday: int, week: int = 0) -> AsyncResult:
         if week != 0:
             raise NotImplementedError("Double week support did not implemented")
         query = select(db.Lesson)
@@ -73,13 +85,18 @@ class SubgroupLessonList:
         query = query.filter(db.Lesson.week == week)
         return await self.session.stream(query)
 
+    async def _get_day_lessons(self, weekday: int, week: int = 0) -> list:
+        lesson_steam = await self._get_day_lesson_steam(weekday, week)
+        return [lesson async for lesson in lesson_steam]
+
     async def _has_today_lessons(self):
         today = datetime.today()
         lessons = await self._get_day_lessons(today.weekday())
+        logger.debug(f'Today has {lessons=}')
         if not lessons:
             return False
         day_end_time = time(0, 0)
-        async for lesson in lessons:
+        for lesson in lessons:
             lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
             day_end_time = max(lesson_end_time, day_end_time)
         return day_end_time < datetime.now().time()
