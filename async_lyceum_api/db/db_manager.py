@@ -8,6 +8,10 @@ from async_lyceum_api.db.base import init_models
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncResult
 from sqlalchemy import select
 from sqlalchemy import exc
+import logging
+
+
+logger = logging.getLogger('lyceum')
 
 
 def run_init_models():
