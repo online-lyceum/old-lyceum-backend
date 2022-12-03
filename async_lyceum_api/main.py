@@ -6,7 +6,7 @@ import logging
 
 
 logging.basicConfig(level=logging.DEBUG, format="[%(asctime)s] [%(process)s] [%(levelname)s] (%(filename)s:%(lineno)d) %(msg)s")
-logger = logging.getLogger("lyceum")
+logger = logging.getLogger(__name__)
 logger.info('Logger start work')
 
 

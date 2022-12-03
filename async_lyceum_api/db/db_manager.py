@@ -11,7 +11,7 @@ from sqlalchemy import exc
 import logging
 
 
-logger = logging.getLogger('lyceum')
+logger = logging.getLogger(__name__)
 
 
 def run_init_models():

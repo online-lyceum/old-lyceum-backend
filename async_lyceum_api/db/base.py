@@ -1,9 +1,13 @@
 import os
+import logging
 
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.orm import sessionmaker
+
+
+logger = logging.getLogger(__name__)
 
 
 host = os.environ.get('POSTGRES_HOST') or '127.0.0.1'
@@ -26,6 +30,7 @@ async def init_models():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
         await conn.run_sync(Base.metadata.create_all)
+    logger.info('Models initialisation is done')
 
 
 async def get_session() -> AsyncSession:
