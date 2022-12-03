@@ -1,3 +1,5 @@
+import sqlalchemy.ext.asyncio.result
+
 from async_lyceum_api.db import db_manager
 from async_lyceum_api.db.base import get_session
 from async_lyceum_api import forms
@@ -172,7 +174,8 @@ async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
 @router.get('/subgroup/{subgroup_id}/lesson', response_model=forms.LessonList)
 async def get_lessons(subgroup_id: int,
                       session: AsyncSession = Depends(get_session)):
-    lessons = await db_manager.get_lessons_by_subgroup_id(session, subgroup_id)
+    lesson_list = db_manager.SubgroupLessonList(session, subgroup_id)
+    lessons = await lesson_list.get_all_lessons()
     format_lessons = []
     async for lesson, in lessons:
         format_lessons.append(forms.Lesson(
@@ -215,11 +218,13 @@ async def get_lessons(class_id: int,
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
 
 
-# @router.get('/subgroup/{subgroup_id}/today', response_model=forms.DayLessonList)
-# async def get_today_lessons(subgroup_id: int,
-#                             session: AsyncSession = Depends(get_session)):
-#     res = await db_manager.get_today_lessons_by_subgroup_id(session, subgroup_id)
-#     return forms.DayLessonList(lesson)
+@router.get('/subgroup/{subgroup_id}/next_day')
+async def get_today_lessons(subgroup_id: int,
+                            session: AsyncSession = Depends(get_session)):
+    lesson_list = db_manager.SubgroupLessonList(session, subgroup_id)
+    res: sqlalchemy.ext.asyncio.result.AsyncResult
+    weekday, res = await lesson_list.get_current_or_next_day_with_lessons()
+    return {'weekday': weekday, 'lessons': res}
 
 
 @router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage)

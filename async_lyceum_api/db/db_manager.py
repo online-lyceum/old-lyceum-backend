@@ -2,9 +2,10 @@ from datetime import time, datetime
 import asyncio
 
 from async_lyceum_api import db
+from async_lyceum_api.db import my_exc
 from async_lyceum_api.db.base import init_models
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncResult
 from sqlalchemy import select
 from sqlalchemy import exc
 
@@ -28,32 +29,56 @@ async def get_cities(session: AsyncSession):
     return await session.stream(query)
 
 
-async def _get_lesson_by_subgroup_id_and_weekday(
-        session: AsyncSession,
-        subgroup_id: int,
-        weekday: int):
-    query = select(db.Lesson)
-    query = query.select_from(db.Lesson)
-    query = query.join(db.LessonSubgroup)
-    query = query.filter(db.Subgroup.subgroup_id == subgroup_id)
-    query = query.filter(db.Lesson.weekday == weekday)
-    return await session.stream(query)
 
+class SubgroupLessonList:
+    def __init__(self, session: AsyncSession, subgroup_id: int):
+        self.subgroup_id = subgroup_id
+        self.session = session
 
-async def get_today_lessons_by_subgroup_id(session: AsyncSession,
-                                           subgroup_id: int):
-    lessons = await _get_lesson_by_subgroup_id_and_weekday(
-        session, subgroup_id, datetime.today().weekday()
-    )
-    day_end_time = time(0, 0)
-    async for lesson in lessons:
-        lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
-        day_end_time = max(lesson_end_time, day_end_time)
-    if day_end_time < datetime.now().time():
-        lessons = await _get_lesson_by_subgroup_id_and_weekday(
-            session, subgroup_id, (datetime.today().weekday() + 1) % 7
-        )
-    return lessons
+    async def get_all_lessons(self):
+        query = select(db.Lesson).join(db.LessonSubgroup)
+        query = query.filter_by(subgroup_id=self.subgroup_id)
+        return await self.session.stream(query)
+
+    async def get_current_or_next_day_with_lessons(self) -> tuple[int, list]:
+        if await self._has_today_lessons():
+            lessons_stream = await self._get_day_lessons(datetime.today().weekday())
+            return (
+                datetime.today().weekday(),
+                [x async for x in lessons_stream]
+            )
+        else:
+            for i in range(1, 7):
+                weekday = (datetime.today().weekday() + i) % 7
+                lessons_steam = await self._get_day_lessons(weekday)
+                lessons = [x async for x in lessons_steam]
+                if lessons:
+                    break
+            else:
+                raise my_exc.LessonsNotFound(subgroup_id=self.subgroup_id)
+            return weekday, lessons
+
+    async def _get_day_lessons(self, weekday: int, week: int = 0) -> AsyncResult:
+        if week != 0:
+            raise NotImplementedError("Double week support did not implemented")
+        query = select(db.Lesson)
+        query = query.select_from(db.Lesson)
+        query = query.join(db.LessonSubgroup)
+        query = query.filter(db.Subgroup.subgroup_id == self.subgroup_id)
+        query = query.filter(db.Lesson.weekday == weekday)
+        query = query.filter(db.Lesson.week == week)
+        return await self.session.stream(query)
+
+    async def _has_today_lessons(self):
+        today = datetime.today()
+        lessons = await self._get_day_lessons(today.weekday())
+        if not lessons:
+            return False
+        day_end_time = time(0, 0)
+        async for lesson in lessons:
+            lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
+            day_end_time = max(lesson_end_time, day_end_time)
+        return day_end_time < datetime.now().time()
 
 
 async def add_school_with_address(session: AsyncSession, name: str,
@@ -176,12 +201,6 @@ async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
     session.add(new_lesson_subgroup)
     await session.commit()
     return new_lesson_subgroup
-
-
-async def get_lessons_by_subgroup_id(session: AsyncSession, subgroup_id: int):
-    query = select(db.Lesson).join(db.LessonSubgroup)
-    query = query.filter_by(subgroup_id=subgroup_id)
-    return await session.stream(query)
 
 
 async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
