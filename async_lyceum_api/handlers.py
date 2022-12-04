@@ -238,22 +238,31 @@ async def get_lessons(class_id: int,
 #     return forms.DayLessonList(lesson)
 
 
-@router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage)
+@router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage, status_code=200)
 async def delete_subgroup(subgroup_id: int,
-                          session: AsyncSession = Depends(get_session)):
+                          session: AsyncSession = Depends(get_session),
+                          response: Response = Response):
     await db_manager.delete_subgroup(session, subgroup_id)
     return forms.DeletingMessage(msg='Delete subgroup', id=subgroup_id)
 
 
-@router.delete('/class/{class_id}', response_model=forms.DeletingMessage)
+@router.delete('/class/{class_id}', response_model=forms.DeletingMessage, status_code=202)
 async def delete_class(class_id: int,
-                       session: AsyncSession = Depends(get_session)):
+                       session: AsyncSession = Depends(get_session),
+                       response: Response = Response):
     await db_manager.delete_class(session, class_id)
     return forms.DeletingMessage(msg='Delete class', id=class_id)
 
 
-@router.delete('/school/{school_id}', response_model=forms.DeletingMessage)
+@router.delete('/school/{school_id}', response_model=forms.DeletingMessage, status_code=202)
 async def delete_school(school_id: int,
-                        session: AsyncSession = Depends(get_session)):
-    await db_manager.delete_school(session, school_id)
-    return forms.DeletingMessage(msg='Delete school', id=school_id)
+                        session: AsyncSession = Depends(get_session),
+                        response: Response = Response):
+    msg: str = 'Delete school'
+    # TODO: Fix checker
+    if await db_manager.school_exist_by_id(session, school_id):
+        await db_manager.delete_school(session, school_id)
+    else:
+        response.status_code = 410
+        msg = 'It doesnt exist'
+    return forms.DeletingMessage(msg=msg, id=school_id)

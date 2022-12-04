@@ -196,21 +196,30 @@ async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
 async def delete_subgroup(session: AsyncSession, subgroup_id: int):
     query = select(db.Subgroup).filter_by(subgroup_id=subgroup_id)
     row = await session.execute(query)
-    await session.delete(row.scalar_one())
+    try:
+        await session.delete(row.scalar_one())
+    except exc.NoResultFound:
+        return
     await session.commit()
 
 
 async def delete_class(session: AsyncSession, class_id: int):
     query = select(db.Class).filter_by(class_id=class_id)
     row = await session.execute(query)
-    await session.delete(row.scalar_one())
+    try:
+        await session.delete(row.scalar_one())
+    except exc.NoResultFound:
+        return
     await session.commit()
 
 
 async def delete_school(session: AsyncSession, school_id: int):
     query = select(db.School).filter_by(school_id=school_id)
     row = await session.execute(query)
-    await session.delete(row.scalar_one())
+    try:
+        await session.delete(row.scalar_one())
+    except exc.NoResultFound:
+        return
     await session.commit()
 
 
@@ -227,6 +236,12 @@ async def school_exist(session: AsyncSession, name: str,
                        city: str, place: str):
     query = select(db.Address).filter_by(city=city, place=place)
     return await _is_exist_(session, query)
+
+
+async def school_exist_by_id(session: AsyncSession, school_id: int):
+    query = select(db.School)
+    query = query.filter_by(school_id=school_id)
+    return _is_exist_(session, query)
 
 
 async def class_exist(session: AsyncSession, school_id: int, number: int,
