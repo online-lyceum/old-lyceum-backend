@@ -87,7 +87,7 @@ class LessonList:
         query = query.select_from(db.Lesson)
         query = query.join(db.LessonSubgroup)
         if self.subgroup_id is not None:
-            query = query.filter(db.Subgroup.subgroup_id == self.subgroup_id)
+            query = query.filter(db.LessonSubgroup.subgroup_id == self.subgroup_id)
         else:
             query = query.join(db.Class)
             query = query.filter(db.Class.class_id == self.class_id)
