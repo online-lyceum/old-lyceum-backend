@@ -89,6 +89,9 @@ class LessonOfGroup(OnlyLessonID):
     subgroup_id: int
 
 
+LessonType = Lesson | LessonOfGroup
+
+
 class LessonList(BaseModel):
     subgroup_id: int
     lessons: list[Lesson]

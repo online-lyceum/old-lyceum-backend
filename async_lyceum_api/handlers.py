@@ -14,15 +14,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix='/api')
 
 
-async def db_lessons_to_lesson_forms(lessons: AsyncResult | list
-) -> list[forms.LessonOfGroup | forms.Lesson]:
+async def transform_db_lessons_to_lesson_forms(
+        lessons: AsyncResult | list) -> list[forms.LessonType]:
     if isinstance(lessons, AsyncResult):
-        return [_db_lesson_row_lesson_form(lesson) async for lesson in lessons]
+        return [_transform_db_lesson_to_lesson_form(lesson) async for lesson, in lessons]
     else:
-        return [_db_lesson_row_lesson_form(lesson) for lesson in lessons]
+        return [_transform_db_lesson_to_lesson_form(lesson) for lesson, in lessons]
 
 
-def _db_lesson_row_lesson_form(lesson: db_manager.db.Lesson):
+def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson):
+    logger.debug(f'{type(lesson)=}')
     return forms.Lesson(
             lesson_id=lesson.lesson_id,
             name=lesson.name,
@@ -204,7 +205,7 @@ async def get_lessons(subgroup_id: int,
                       session: AsyncSession = Depends(get_session)):
     lesson_list = db_manager.LessonList(session, subgroup_id)
     db_lesson_rows = await lesson_list.get_all_lessons()
-    lesson_forms = await db_lessons_to_lesson_forms(db_lesson_rows)
+    lesson_forms = await transform_db_lessons_to_lesson_forms(db_lesson_rows)
     return forms.LessonList(subgroup_id=subgroup_id, lessons=lesson_forms)
 
 
@@ -213,19 +214,24 @@ async def get_lessons(subgroup_id: int,
 async def get_lessons(class_id: int,
                       session: AsyncSession = Depends(get_session)):
     db_lesson_rows = await db_manager.get_lessons_by_class_id(session, class_id)
-    lessons = await db_lessons_to_lesson_forms(db_lesson_rows)
+    lessons = await transform_db_lessons_to_lesson_forms(db_lesson_rows)
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
 
 
-@router.get('/subgroup/{subgroup_id}/next_day',
+@router.get('/subgroup/{subgroup_id}/lessons_to_show_today',
             response_model=forms.DaySubgroupLessons)
 async def get_today_lessons(subgroup_id: int,
                             session: AsyncSession = Depends(get_session)):
     lesson_list = db_manager.LessonList(session, subgroup_id)
-    weekday, db_lesson = await lesson_list.get_current_or_next_day_with_lessons()
-    lessons = db_lessons_to_lesson_forms(db_lesson)
+    weekday, db_lesson_rows = await lesson_list.get_current_or_next_day_with_lessons()
+    lessons = await transform_db_lessons_to_lesson_forms(db_lesson_rows)
     logger.debug(f'{lessons=}')
-    return forms.DaySubgroupLessons(weekday=weekday, week=0, lessons=lessons)
+    return forms.DaySubgroupLessons(
+        weekday=weekday,
+        week=0,
+        lessons=lessons,
+        subgroup_id=subgroup_id
+    )
 
 
 @router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage)

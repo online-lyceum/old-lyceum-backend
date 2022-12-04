@@ -1,6 +1,8 @@
 from datetime import time, datetime
 import asyncio
 
+import sqlalchemy.engine
+
 from async_lyceum_api import db
 from async_lyceum_api.db import my_exc
 from async_lyceum_api.db.base import init_models
@@ -54,10 +56,11 @@ class LessonList:
             query = query.filter_by(subgroup_id=self.class_id)
         return await self.session.stream(query)
 
-    async def get_current_or_next_day_with_lessons(self) -> tuple[int, list]:
+    async def get_current_or_next_day_with_lessons(self
+        ) -> tuple[int, list[sqlalchemy.engine.Row]]:
         if await self._has_today_lessons():
             logger.debug('Has lessons today')
-            lessons = await self._get_day_lessons(datetime.today().weekday())
+            lessons = await self._get_day_lesson_rows(datetime.today().weekday())
             return (
                 datetime.today().weekday(),
                 lessons
@@ -66,12 +69,15 @@ class LessonList:
             logger.debug('Has not lessons today')
             for i in range(1, 7):
                 weekday = (datetime.today().weekday() + i) % 7
-                lessons = await self._get_day_lessons(weekday)
+                lessons = await self._get_day_lesson_rows(weekday)
                 logger.debug(f'Lessons on {weekday=} is {lessons}')
                 if lessons:
                     break
             else:
-                raise my_exc.LessonsNotFound(subgroup_id=self.subgroup_id)
+                raise my_exc.LessonsNotFound(
+                    class_id=self.class_id,
+                    subgroup_id=self.subgroup_id
+                )
             return weekday, lessons
 
     async def _get_day_lesson_steam(self, weekday: int, week: int = 0) -> AsyncResult:
@@ -80,23 +86,30 @@ class LessonList:
         query = select(db.Lesson)
         query = query.select_from(db.Lesson)
         query = query.join(db.LessonSubgroup)
-        query = query.filter(db.Subgroup.subgroup_id == self.subgroup_id)
+        if self.subgroup_id is not None:
+            query = query.filter(db.Subgroup.subgroup_id == self.subgroup_id)
+        else:
+            query = query.join(db.Class)
+            query = query.filter(db.Class.class_id == self.class_id)
         query = query.filter(db.Lesson.weekday == weekday)
         query = query.filter(db.Lesson.week == week)
         return await self.session.stream(query)
 
-    async def _get_day_lessons(self, weekday: int, week: int = 0) -> list:
+    async def _get_day_lesson_rows(
+            self,
+            weekday: int,
+            week: int = 0) -> list[sqlalchemy.engine.Row]:
         lesson_steam = await self._get_day_lesson_steam(weekday, week)
         return [lesson async for lesson in lesson_steam]
 
     async def _has_today_lessons(self):
         today = datetime.today()
-        lessons = await self._get_day_lessons(today.weekday())
+        lessons = await self._get_day_lesson_rows(today.weekday())
         logger.debug(f'Today has {lessons=}')
         if not lessons:
             return False
         day_end_time = time(0, 0)
-        for lesson in lessons:
+        for lesson, in lessons:
             lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
             day_end_time = max(lesson_end_time, day_end_time)
         return day_end_time < datetime.now().time()
@@ -195,10 +208,16 @@ async def get_teachers(session: AsyncSession):
     return await session.stream(query)
 
 
-async def create_lesson(session: AsyncSession, school_id: int,
-                        name: str, start_time: dict[str, int],
-                        end_time: dict[str, int], week: int,
-                        weekday: int, teacher_id: int):
+async def create_lesson(
+        session: AsyncSession,
+        school_id: int,
+        name: str,
+        start_time: dict[str, int],
+        end_time: dict[str, int],
+        week: int,
+        weekday: int,
+        teacher_id: int
+    ):
     new_lesson = db.Lesson(
         name=name,
         start_time=time(hour=start_time['hour'],
