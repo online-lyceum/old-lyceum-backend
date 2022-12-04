@@ -1,5 +1,4 @@
 from pydantic import BaseModel
-from starlette.responses import JSONResponse
 
 
 class Message(BaseModel):
