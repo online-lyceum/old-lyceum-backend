@@ -1,12 +1,19 @@
 from datetime import time, datetime
 import asyncio
 
+import sqlalchemy.engine
+
 from async_lyceum_api import db
+from async_lyceum_api.db import my_exc
 from async_lyceum_api.db.base import init_models
 
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncResult
 from sqlalchemy import select
 from sqlalchemy import exc
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def run_init_models():
@@ -28,32 +35,84 @@ async def get_cities(session: AsyncSession):
     return await session.stream(query)
 
 
-async def _get_lesson_by_subgroup_id_and_weekday(
-        session: AsyncSession,
-        subgroup_id: int,
-        weekday: int):
-    query = select(db.Lesson)
-    query = query.select_from(db.Lesson)
-    query = query.join(db.LessonSubgroup)
-    query = query.filter(db.Subgroup.subgroup_id == subgroup_id)
-    query = query.filter(db.Lesson.weekday == weekday)
-    return await session.stream(query)
 
+class LessonList:
+    def __init__(self,
+                 session: AsyncSession,
+                 subgroup_id: int = None,
+                 class_id: int = None):
+        if subgroup_id is None and class_id is None:
+            raise TypeError('One of subgroup_id and class_id must be '
+                            'int, but None')
+        self.class_id = class_id
+        self.subgroup_id = subgroup_id
+        self.session = session
 
-async def get_today_lessons_by_subgroup_id(session: AsyncSession,
-                                           subgroup_id: int):
-    lessons = await _get_lesson_by_subgroup_id_and_weekday(
-        session, subgroup_id, datetime.today().weekday()
-    )
-    day_end_time = time(0, 0)
-    async for lesson in lessons:
-        lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
-        day_end_time = max(lesson_end_time, day_end_time)
-    if day_end_time < datetime.now().time():
-        lessons = await _get_lesson_by_subgroup_id_and_weekday(
-            session, subgroup_id, (datetime.today().weekday() + 1) % 7
-        )
-    return lessons
+    async def get_all_lessons(self):
+        query = select(db.Lesson).join(db.LessonSubgroup)
+        if self.subgroup_id is not None:
+            query = query.filter_by(subgroup_id=self.subgroup_id)
+        else:
+            query = query.filter_by(subgroup_id=self.class_id)
+        return await self.session.stream(query)
+
+    async def get_current_or_next_day_with_lessons(self
+        ) -> tuple[int, list[sqlalchemy.engine.Row]]:
+        if await self._has_today_lessons():
+            logger.debug('Has lessons today')
+            lessons = await self._get_day_lesson_rows(datetime.today().weekday())
+            return (
+                datetime.today().weekday(),
+                lessons
+            )
+        else:
+            logger.debug('Has not lessons today')
+            for i in range(1, 7):
+                weekday = (datetime.today().weekday() + i) % 7
+                lessons = await self._get_day_lesson_rows(weekday)
+                logger.debug(f'Lessons on {weekday=} is {lessons}')
+                if lessons:
+                    break
+            else:
+                raise my_exc.LessonsNotFound(
+                    class_id=self.class_id,
+                    subgroup_id=self.subgroup_id
+                )
+            return weekday, lessons
+
+    async def _get_day_lesson_steam(self, weekday: int, week: int = 0) -> AsyncResult:
+        if week != 0:
+            raise NotImplementedError("Double week support did not implemented")
+        query = select(db.Lesson)
+        query = query.select_from(db.Lesson)
+        query = query.join(db.LessonSubgroup)
+        if self.subgroup_id is not None:
+            query = query.filter(db.Subgroup.subgroup_id == self.subgroup_id)
+        else:
+            query = query.join(db.Class)
+            query = query.filter(db.Class.class_id == self.class_id)
+        query = query.filter(db.Lesson.weekday == weekday)
+        query = query.filter(db.Lesson.week == week)
+        return await self.session.stream(query)
+
+    async def _get_day_lesson_rows(
+            self,
+            weekday: int,
+            week: int = 0) -> list[sqlalchemy.engine.Row]:
+        lesson_steam = await self._get_day_lesson_steam(weekday, week)
+        return [lesson async for lesson in lesson_steam]
+
+    async def _has_today_lessons(self):
+        today = datetime.today()
+        lessons = await self._get_day_lesson_rows(today.weekday())
+        logger.debug(f'Today has {lessons=}')
+        if not lessons:
+            return False
+        day_end_time = time(0, 0)
+        for lesson, in lessons:
+            lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
+            day_end_time = max(lesson_end_time, day_end_time)
+        return day_end_time < datetime.now().time()
 
 
 async def add_school_with_address(session: AsyncSession, name: str,
@@ -149,10 +208,16 @@ async def get_teachers(session: AsyncSession):
     return await session.stream(query)
 
 
-async def create_lesson(session: AsyncSession, school_id: int,
-                        name: str, start_time: dict[str, int],
-                        end_time: dict[str, int], week: int,
-                        weekday: int, teacher_id: int):
+async def create_lesson(
+        session: AsyncSession,
+        school_id: int,
+        name: str,
+        start_time: dict[str, int],
+        end_time: dict[str, int],
+        week: int,
+        weekday: int,
+        teacher_id: int
+    ):
     new_lesson = db.Lesson(
         name=name,
         start_time=time(hour=start_time['hour'],
@@ -176,12 +241,6 @@ async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
     session.add(new_lesson_subgroup)
     await session.commit()
     return new_lesson_subgroup
-
-
-async def get_lessons_by_subgroup_id(session: AsyncSession, subgroup_id: int):
-    query = select(db.Lesson).join(db.LessonSubgroup)
-    query = query.filter_by(subgroup_id=subgroup_id)
-    return await session.stream(query)
 
 
 async def get_lessons_by_class_id(session: AsyncSession, class_id: int):

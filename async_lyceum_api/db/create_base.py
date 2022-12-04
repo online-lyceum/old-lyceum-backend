@@ -1,7 +1,11 @@
 import os
 import asyncio
+import logging
 
 import asyncpg
+
+
+logger = logging.getLogger(__name__)
 
 
 host = os.environ.get('POSTGRES_HOST') or '127.0.0.1'
@@ -32,4 +36,4 @@ async def connect_create_if_not_exists(user, database, password, host):
 
 def run_init_db():
     asyncio.run(connect_create_if_not_exists(user, db, password, host))
-    print('Done')
+    logger.info('DB initialization is done')

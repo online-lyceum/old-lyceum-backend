@@ -89,6 +89,9 @@ class LessonOfGroup(OnlyLessonID):
     subgroup_id: int
 
 
+LessonType = Lesson | LessonOfGroup
+
+
 class LessonList(BaseModel):
     subgroup_id: int
     lessons: list[Lesson]
@@ -111,3 +114,8 @@ class LessonListByClassID(BaseModel):
 
 class DeletingMessage(Message):
     id: int
+
+
+class DaySubgroupLessons(LessonList):
+    weekday: int
+    week: int
