@@ -6,6 +6,7 @@ from fastapi import APIRouter
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from fastapi import Response
 
 router = APIRouter(prefix='/api')
 
@@ -39,10 +40,13 @@ async def get_schools(session: AsyncSession = Depends(get_session)):
     return forms.SchoolList(schools=schools)
 
 
-@router.post('/school', response_model=forms.School)
+@router.post('/school', response_model=forms.School, status_code=201)
 async def create_school(school: forms.SchoolWithoutID,
-                        session: AsyncSession = Depends(get_session)):
+                        session: AsyncSession = Depends(get_session),
+                        response: Response = Response):
     new_school, address = await db_manager.add_school_with_address(session, **dict(school))
+    response.status_code = 223
+
     return forms.School(
         school_id=new_school.school_id,
         name=new_school.name,
