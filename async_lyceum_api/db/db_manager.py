@@ -74,10 +74,7 @@ class LessonList:
                 if lessons:
                     break
             else:
-                raise my_exc.LessonsNotFound(
-                    class_id=self.class_id,
-                    subgroup_id=self.subgroup_id
-                )
+                return 0, []
             return weekday, lessons
 
     async def _get_day_lesson_steam(self, weekday: int, week: int = 0) -> AsyncResult:
@@ -89,6 +86,7 @@ class LessonList:
         if self.subgroup_id is not None:
             query = query.filter(db.LessonSubgroup.subgroup_id == self.subgroup_id)
         else:
+            query = query.join(db.Subgroup)
             query = query.join(db.Class)
             query = query.filter(db.Class.class_id == self.class_id)
         query = query.filter(db.Lesson.weekday == weekday)
