@@ -1,6 +1,8 @@
 from datetime import time, datetime
 import asyncio
 
+from fastapi.responses import Response
+
 from async_lyceum_api import db
 from async_lyceum_api.db.base import init_models
 
@@ -56,7 +58,7 @@ async def get_today_lessons_by_subgroup_id(session: AsyncSession,
     return lessons
 
 
-async def add_school_with_address(session: AsyncSession, name: str,
+async def add_school_with_address(session: AsyncSession, response: Response, name: str,
                                   city: str, place: str):
     query = select(db.Address).filter_by(city=city, place=place)
     try:
@@ -66,6 +68,7 @@ async def add_school_with_address(session: AsyncSession, name: str,
         session.add(new_address)
         await session.flush([new_address])
         address = new_address
+        response.status_code = 201
 
     query = select(db.School).filter_by(name=name,
                                         address_id=address.address_id)
@@ -108,9 +111,9 @@ async def add_class(session: AsyncSession, school_id: int, number: int,
                     letter: str, class_type: str = "класс"):
     class_type_id = await _get_or_create_class_type_id(session, class_type)
     query = select(db.Class).filter_by(
-            school_id=school_id, number=number,
-            letter=letter, class_type_id=class_type_id
-        )
+        school_id=school_id, number=number,
+        letter=letter, class_type_id=class_type_id
+    )
     try:
         return (await session.execute(query)).one()[0], class_type
     except exc.NoResultFound:

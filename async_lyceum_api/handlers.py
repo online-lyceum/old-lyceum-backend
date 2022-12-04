@@ -40,12 +40,12 @@ async def get_schools(session: AsyncSession = Depends(get_session)):
     return forms.SchoolList(schools=schools)
 
 
-@router.post('/school', response_model=forms.School, status_code=201)
+@router.post('/school', response_model=forms.School, status_code=200)
 async def create_school(school: forms.SchoolWithoutID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
-    new_school, address = await db_manager.add_school_with_address(session, **dict(school))
-    response.status_code = 223
+
+    new_school, address = await db_manager.add_school_with_address(session, response, **dict(school))
 
     return forms.School(
         school_id=new_school.school_id,
