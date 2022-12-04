@@ -58,7 +58,7 @@ async def get_today_lessons_by_subgroup_id(session: AsyncSession,
     return lessons
 
 
-async def add_school_with_address(session: AsyncSession, response: Response, name: str,
+async def add_school_with_address(session: AsyncSession, name: str,
                                   city: str, place: str):
     query = select(db.Address).filter_by(city=city, place=place)
     try:
@@ -68,7 +68,6 @@ async def add_school_with_address(session: AsyncSession, response: Response, nam
         session.add(new_address)
         await session.flush([new_address])
         address = new_address
-        response.status_code = 201
 
     query = select(db.School).filter_by(name=name,
                                         address_id=address.address_id)
@@ -213,3 +212,33 @@ async def delete_school(session: AsyncSession, school_id: int):
     row = await session.execute(query)
     await session.delete(row.scalar_one())
     await session.commit()
+
+
+async def _is_exist_(session: AsyncSession, query):
+    is_exist: bool = True
+    try:
+        (await session.execute(query)).one()[0]
+    except exc.NoResultFound:
+        is_exist = False
+    return is_exist
+
+
+async def school_exist(session: AsyncSession, name: str,
+                       city: str, place: str):
+    query = select(db.Address).filter_by(city=city, place=place)
+    return await _is_exist_(session, query)
+
+
+async def class_exist(session: AsyncSession, school_id: int, number: int,
+                      letter: str, class_type: str = "класс"):
+    class_type_id = await _get_or_create_class_type_id(session, class_type)
+    query = select(db.Class).filter_by(
+        school_id=school_id, number=number,
+        letter=letter, class_type_id=class_type_id
+    )
+    return await _is_exist_(session, query)
+
+
+async def subgroup_exist(session: AsyncSession, class_id: int, name: str):
+    query = select(db.Subgroup).filter_by(class_id=class_id, name=name)
+    return await _is_exist_(session, query)

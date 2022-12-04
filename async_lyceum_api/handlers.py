@@ -44,8 +44,10 @@ async def get_schools(session: AsyncSession = Depends(get_session)):
 async def create_school(school: forms.SchoolWithoutID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
+    if await db_manager.school_exist(session, **dict(school)):
+        response.status_code = 201
 
-    new_school, address = await db_manager.add_school_with_address(session, response, **dict(school))
+    new_school, address = await db_manager.add_school_with_address(session, **dict(school))
 
     return forms.School(
         school_id=new_school.school_id,
@@ -72,9 +74,13 @@ async def get_classes(school_id: int,
     return forms.ClassList(school_id=school_id, classes=classes)
 
 
-@router.post('/school/{school_id}/class', response_model=forms.Class)
+@router.post('/school/{school_id}/class', response_model=forms.Class, status_code=200)
 async def create_class(school_id: int, class_: forms.ClassWithoutID,
-                       session: AsyncSession = Depends(get_session)):
+                       session: AsyncSession = Depends(get_session),
+                       response: Response = Response):
+    if await db_manager.class_exist(session, school_id=school_id, **dict(class_)):
+        response.status_code = 201
+
     new_class, class_type = await db_manager.add_class(
         session,
         school_id=school_id,
@@ -88,9 +94,15 @@ async def create_class(school_id: int, class_: forms.ClassWithoutID,
     )
 
 
-@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup)
+@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup, status_code=200)
 async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
-                          session: AsyncSession = Depends(get_session)):
+                          session: AsyncSession = Depends(get_session),
+                          response: Response = Response):
+    if await db_manager.subgroup_exist(session,
+                                       class_id=class_id,
+                                       name=subgroup.name):
+        response.status_code = 201
+
     new_subgroup = await db_manager.create_subgroup(
         session,
         class_id=class_id,
