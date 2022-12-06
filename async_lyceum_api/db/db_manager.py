@@ -184,11 +184,16 @@ async def create_lesson(session: AsyncSession, school_id: int,
 
 async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
                                  subgroup_id: int):
-    new_lesson_subgroup = db.LessonSubgroup(lesson_id=lesson_id,
-                                            subgroup_id=subgroup_id)
-    session.add(new_lesson_subgroup)
-    await session.commit()
-    return new_lesson_subgroup
+    query = select(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
+    query = query.filter_by(lesson_id=lesson_id)
+    try:
+        return (await session.execute(query)).one()[0]
+    except exc.NoResultFound:
+        new_lesson_subgroup = db.LessonSubgroup(lesson_id=lesson_id,
+                                                subgroup_id=subgroup_id)
+        session.add(new_lesson_subgroup)
+        await session.commit()
+        return new_lesson_subgroup
 
 
 async def get_lessons_by_subgroup_id(session: AsyncSession, subgroup_id: int):
@@ -291,4 +296,11 @@ async def lesson_exist(session: AsyncSession, school_id: int,
     query = query.filter_by(weekday=weekday)
     query = query.filter_by(teacher_id=teacher_id)
     query = query.filter_by(school_id=school_id)
+    return await _is_exist_(session, query)
+
+
+async def subgroup_lesson_exist(session: AsyncSession, lesson_id: int,
+                                subgroup_id: int):
+    query = select(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
+    query = query.filter_by(lesson_id=lesson_id)
     return await _is_exist_(session, query)

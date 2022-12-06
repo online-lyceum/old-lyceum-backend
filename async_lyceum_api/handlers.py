@@ -180,9 +180,13 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
 
 
 @router.post('/subgroup/{subgroup_id}/lesson',
-             response_model=forms.LessonOfGroup)
+             response_model=forms.LessonOfGroup, status_code=200)
 async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
-                     session: AsyncSession = Depends(get_session)):
+                     session: AsyncSession = Depends(get_session),
+                     response: Response = Response):
+    if await db_manager.subgroup_lesson_exist(session, lesson.lesson_id,
+                                              subgroup_id):
+        response.status_code = 201
     res = await db_manager.add_lesson_to_subgroup(session, lesson.lesson_id,
                                                   subgroup_id)
     return forms.LessonOfGroup(
@@ -237,13 +241,6 @@ async def get_lessons(class_id: int,
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
 
 
-# @router.get('/subgroup/{subgroup_id}/today', response_model=forms.DayLessonList)
-# async def get_today_lessons(subgroup_id: int,
-#                             session: AsyncSession = Depends(get_session)):
-#     res = await db_manager.get_today_lessons_by_subgroup_id(session, subgroup_id)
-#     return forms.DayLessonList(lesson)
-
-
 @router.delete('/lesson/{lesson_id}', response_model=forms.DeletingMessage, status_code=200)
 async def delete_lesson(lesson_id: int,
                         session: AsyncSession = Depends(get_session),
@@ -286,13 +283,3 @@ async def delete_school(school_id: int,
         response.status_code = 406
         msg = 'School doesnt exist'
     return forms.DeletingMessage(msg=msg, id=school_id)
-
-# @router.delete('/subgroup/{subgroup_id}/lesson/{lesson_id}', response_model=forms.DeletingMessageForSubgroupLesson,
-#                status_code=200)
-# async def delete_subgroup_lesson(subgroup_id: int, lesson_id: int,
-#                                  session: AsyncSession = Depends(get_session),
-#                                  response: Response = Response):
-#     await db_manager.delete_subgroup_lesson(session, subgroup_id, lesson_id)
-#     return forms.DeletingMessageForSubgroupLesson(msg='Delete subgroup lesson',
-#                                                   subgroup_id=subgroup_id,
-#                                                   lesson_id=lesson_id)
