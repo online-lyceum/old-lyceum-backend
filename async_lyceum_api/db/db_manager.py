@@ -1,8 +1,6 @@
 from datetime import time, datetime
 import asyncio
 
-from fastapi.responses import Response
-
 from async_lyceum_api import db
 from async_lyceum_api.db.base import init_models
 
@@ -236,12 +234,6 @@ async def school_exist(session: AsyncSession, name: str,
                        city: str, place: str):
     query = select(db.Address).filter_by(city=city, place=place)
     return await _is_exist_(session, query)
-
-
-async def school_exist_by_id(session: AsyncSession, school_id: int):
-    query = select(db.School)
-    query = query.filter_by(school_id=school_id)
-    return _is_exist_(session, query)
 
 
 async def class_exist(session: AsyncSession, school_id: int, number: int,
