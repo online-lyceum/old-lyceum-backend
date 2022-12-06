@@ -238,22 +238,56 @@ async def get_lessons(class_id: int,
 #     return forms.DayLessonList(lesson)
 
 
+@router.delete('/lesson/{lesson_id}', response_model=forms.DeletingMessage, status_code=200)
+async def delete_lesson(lesson_id: int,
+                        session: AsyncSession = Depends(get_session),
+                        response: Response = Response):
+    msg: str = 'Delete lesson'
+    if not await db_manager.delete_lesson(session, lesson_id):
+        response.status_code = 406
+        msg = 'Lesson doesnt exist'
+    return forms.DeletingMessage(msg=msg, id=lesson_id)
+
+
 @router.delete('/subgroup/{subgroup_id}', response_model=forms.DeletingMessage, status_code=200)
 async def delete_subgroup(subgroup_id: int,
-                          session: AsyncSession = Depends(get_session)):
-    await db_manager.delete_subgroup(session, subgroup_id)
-    return forms.DeletingMessage(msg='Delete subgroup', id=subgroup_id)
+                          session: AsyncSession = Depends(get_session),
+                          response: Response = Response):
+    msg: str = 'Delete subgroup'
+    if not await db_manager.delete_subgroup(session, subgroup_id):
+        response.status_code = 406
+        msg = 'Subgroup doesnt exist'
+    return forms.DeletingMessage(msg=msg, id=subgroup_id)
 
 
 @router.delete('/class/{class_id}', response_model=forms.DeletingMessage, status_code=200)
 async def delete_class(class_id: int,
-                       session: AsyncSession = Depends(get_session)):
-    await db_manager.delete_class(session, class_id)
-    return forms.DeletingMessage(msg='Delete class', id=class_id)
+                       session: AsyncSession = Depends(get_session),
+                       response: Response = Response):
+    msg: str = 'Delete class'
+    if not await db_manager.delete_class(session, class_id):
+        response.status_code = 406
+        msg = 'Class doesnt exist'
+    return forms.DeletingMessage(msg=msg, id=class_id)
 
 
 @router.delete('/school/{school_id}', response_model=forms.DeletingMessage, status_code=200)
 async def delete_school(school_id: int,
-                        session: AsyncSession = Depends(get_session)):
-    await db_manager.delete_school(session, school_id)
-    return forms.DeletingMessage(msg='Delete school', id=school_id)
+                        session: AsyncSession = Depends(get_session),
+                        response: Response = Response):
+    msg: str = 'Delete school'
+    if not await db_manager.delete_school(session, school_id):
+        response.status_code = 406
+        msg = 'School doesnt exist'
+    return forms.DeletingMessage(msg=msg, id=school_id)
+
+
+# @router.delete('/subgroup/{subgroup_id}/lesson/{lesson_id}', response_model=forms.DeletingMessageForSubgroupLesson,
+#                status_code=200)
+# async def delete_subgroup_lesson(subgroup_id: int, lesson_id: int,
+#                                  session: AsyncSession = Depends(get_session),
+#                                  response: Response = Response):
+#     await db_manager.delete_subgroup_lesson(session, subgroup_id, lesson_id)
+#     return forms.DeletingMessageForSubgroupLesson(msg='Delete subgroup lesson',
+#                                                   subgroup_id=subgroup_id,
+#                                                   lesson_id=lesson_id)

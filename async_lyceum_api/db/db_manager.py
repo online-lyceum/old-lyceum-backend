@@ -191,34 +191,48 @@ async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
     return await session.stream(query)
 
 
-async def delete_subgroup(session: AsyncSession, subgroup_id: int):
-    query = select(db.Subgroup).filter_by(subgroup_id=subgroup_id)
-    row = await session.execute(query)
+async def _delete_(session: AsyncSession, row):
     try:
         await session.delete(row.scalar_one())
     except exc.NoResultFound:
-        return
+        return False
     await session.commit()
+    return True
+
+
+# async def delete_subgroup_lesson(session: AsyncSession, subgroup_id: int, #TODO: need to fix
+#                                  lesson_id: int):
+#     query = select(db.Lesson).join(db.LessonSubgroup)
+#     query = query.filter_by(subgroup_id=subgroup_id)
+#     query = query.filter_by(lesson_id=lesson_id)
+#
+#     row = await session.execute(query)
+#     await session.delete(row.scalar_one())
+#     await session.commit()
+
+
+async def delete_lesson(session: AsyncSession, lesson_id: int):
+    query = select(db.Lesson).filter_by(lesson_id=lesson_id)
+    row = await session.execute(query)
+    return await _delete_(session, row)
+
+
+async def delete_subgroup(session: AsyncSession, subgroup_id: int):
+    query = select(db.Subgroup).filter_by(subgroup_id=subgroup_id)
+    row = await session.execute(query)
+    return await _delete_(session, row)
 
 
 async def delete_class(session: AsyncSession, class_id: int):
     query = select(db.Class).filter_by(class_id=class_id)
     row = await session.execute(query)
-    try:
-        await session.delete(row.scalar_one())
-    except exc.NoResultFound:
-        return
-    await session.commit()
+    return await _delete_(session, row)
 
 
 async def delete_school(session: AsyncSession, school_id: int):
     query = select(db.School).filter_by(school_id=school_id)
     row = await session.execute(query)
-    try:
-        await session.delete(row.scalar_one())
-    except exc.NoResultFound:
-        return
-    await session.commit()
+    return await _delete_(session, row)
 
 
 async def _is_exist_(session: AsyncSession, query):

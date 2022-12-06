@@ -111,3 +111,8 @@ class LessonListByClassID(BaseModel):
 
 class DeletingMessage(Message):
     id: int
+
+
+class DeletingMessageForSubgroupLesson(Message):
+    subgroup_id: int
+    lesson_id: int
