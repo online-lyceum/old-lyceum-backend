@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
@@ -73,7 +73,7 @@ class LessonWithoutID(BaseModel):
     start_time: Time
     end_time: Time
     week: int
-    weekday: int
+    weekday: int = Field(..., ge=0, le=6)
     teacher_id: int
 
 
