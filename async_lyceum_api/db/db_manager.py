@@ -153,20 +153,33 @@ async def create_lesson(session: AsyncSession, school_id: int,
                         name: str, start_time: dict[str, int],
                         end_time: dict[str, int], week: int,
                         weekday: int, teacher_id: int):
-    new_lesson = db.Lesson(
-        name=name,
-        start_time=time(hour=start_time['hour'],
-                        minute=start_time['minute']),
-        end_time=time(hour=end_time['hour'],
-                      minute=end_time['minute']),
-        week=week,
-        weekday=weekday,
-        teacher_id=teacher_id,
-        school_id=school_id
-    )
-    session.add(new_lesson)
-    await session.commit()
-    return new_lesson
+    query = select(db.Lesson).filter_by(name=name)
+    query = query.filter_by(start_time=time(hour=start_time['hour'],
+                                            minute=start_time['minute']))
+    query = query.filter_by(end_time=time(hour=end_time['hour'],
+                                          minute=end_time['minute']))
+    query = query.filter_by(week=week)
+    query = query.filter_by(weekday=weekday)
+    query = query.filter_by(teacher_id=teacher_id)
+    query = query.filter_by(school_id=school_id)
+
+    try:
+        return (await session.execute(query)).one()[0]
+    except exc.NoResultFound:
+        new_lesson = db.Lesson(
+            name=name,
+            start_time=time(hour=start_time['hour'],
+                            minute=start_time['minute']),
+            end_time=time(hour=end_time['hour'],
+                          minute=end_time['minute']),
+            week=week,
+            weekday=weekday,
+            teacher_id=teacher_id,
+            school_id=school_id
+        )
+        session.add(new_lesson)
+        await session.commit()
+        return new_lesson
 
 
 async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
@@ -262,4 +275,20 @@ async def class_exist(session: AsyncSession, school_id: int, number: int,
 
 async def subgroup_exist(session: AsyncSession, class_id: int, name: str):
     query = select(db.Subgroup).filter_by(class_id=class_id, name=name)
+    return await _is_exist_(session, query)
+
+
+async def lesson_exist(session: AsyncSession, school_id: int,
+                       name: str, start_time: dict[str, int],
+                       end_time: dict[str, int], week: int,
+                       weekday: int, teacher_id: int):
+    query = select(db.Lesson).filter_by(name=name)
+    query = query.filter_by(start_time=time(hour=start_time['hour'],
+                                            minute=start_time['minute']))
+    query = query.filter_by(end_time=time(hour=end_time['hour'],
+                                          minute=end_time['minute']))
+    query = query.filter_by(week=week)
+    query = query.filter_by(weekday=weekday)
+    query = query.filter_by(teacher_id=teacher_id)
+    query = query.filter_by(school_id=school_id)
     return await _is_exist_(session, query)

@@ -150,9 +150,15 @@ async def get_teachers(session: AsyncSession = Depends(get_session)):
     return forms.TeacherList(teachers=teachers)
 
 
-@router.post('/school/{school_id}/lesson', response_model=forms.Lesson)
+@router.post('/school/{school_id}/lesson', response_model=forms.Lesson, status_code=200)
 async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
-                        session: AsyncSession = Depends(get_session)):
+                        session: AsyncSession = Depends(get_session),
+                        response: Response = Response):
+    if await db_manager.lesson_exist(session, school_id,
+                                     lesson.name, dict(lesson.start_time),
+                                     dict(lesson.end_time), lesson.week,
+                                     lesson.weekday, lesson.teacher_id):
+        response.status_code = 201
     lesson = await db_manager.create_lesson(
         session, school_id=school_id,
         name=lesson.name, start_time=dict(lesson.start_time),
@@ -280,7 +286,6 @@ async def delete_school(school_id: int,
         response.status_code = 406
         msg = 'School doesnt exist'
     return forms.DeletingMessage(msg=msg, id=school_id)
-
 
 # @router.delete('/subgroup/{subgroup_id}/lesson/{lesson_id}', response_model=forms.DeletingMessageForSubgroupLesson,
 #                status_code=200)
