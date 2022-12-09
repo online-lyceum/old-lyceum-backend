@@ -315,4 +315,3 @@ async def delete_school(school_id: int,
         response.status_code = 406
         msg = 'School doesnt exist'
     return forms.DeletingMessage(msg=msg, id=school_id)
-A
