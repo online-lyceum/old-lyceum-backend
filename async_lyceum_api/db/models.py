@@ -98,10 +98,10 @@ class LessonSubgroup(Base):
     И какие подгруппы будут на уроке."""
     __tablename__ = "lesson_subgroups"
     lesson_id = Column(
-        ForeignKey('lessons.lesson_id', ondelete='CASCADE'),
+        ForeignKey('lessons.lesson_id', ondelete='RESTRICT'),
         primary_key=True
     )
     subgroup_id = Column(
-        ForeignKey('subgroups.subgroup_id', ondelete='CASCADE'),
+        ForeignKey('subgroups.subgroup_id', ondelete='RESTRICT'),
         primary_key=True
     )

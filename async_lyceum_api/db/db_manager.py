@@ -269,6 +269,13 @@ async def _delete_(session: AsyncSession, row):
     return True
 
 
+async def delete_subgroup_lesson(session: AsyncSession, subgroup_id: int, lesson_id: int):
+    query = select(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
+    query = query.filter_by(lesson_id=lesson_id)
+    row = await session.execute(query)
+    return await _delete_(session, row)
+
+
 async def delete_lesson(session: AsyncSession, lesson_id: int):
     query = select(db.Lesson).filter_by(lesson_id=lesson_id)
     row = await session.execute(query)

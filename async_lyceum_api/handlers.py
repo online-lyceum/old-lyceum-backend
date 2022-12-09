@@ -71,12 +71,12 @@ async def get_schools(session: AsyncSession = Depends(get_session)):
     return forms.SchoolList(schools=schools)
 
 
-@router.post('/school', response_model=forms.School, status_code=200)
+@router.post('/school', response_model=forms.School, status_code=201)
 async def create_school(school: forms.SchoolWithoutID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
     if await db_manager.school_exist(session, **dict(school)):
-        response.status_code = 201
+        response.status_code = 200
 
     new_school, address = await db_manager.add_school_with_address(session, **dict(school))
 
@@ -105,12 +105,12 @@ async def get_classes(school_id: int,
     return forms.ClassList(school_id=school_id, classes=classes)
 
 
-@router.post('/school/{school_id}/class', response_model=forms.Class, status_code=200)
+@router.post('/school/{school_id}/class', response_model=forms.Class, status_code=201)
 async def create_class(school_id: int, class_: forms.ClassWithoutID,
                        session: AsyncSession = Depends(get_session),
                        response: Response = Response):
     if await db_manager.class_exist(session, school_id=school_id, **dict(class_)):
-        response.status_code = 201
+        response.status_code = 200
 
     new_class, class_type = await db_manager.add_class(
         session,
@@ -125,14 +125,14 @@ async def create_class(school_id: int, class_: forms.ClassWithoutID,
     )
 
 
-@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup, status_code=200)
+@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup, status_code=201)
 async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
                           session: AsyncSession = Depends(get_session),
                           response: Response = Response):
     if await db_manager.subgroup_exist(session,
                                        class_id=class_id,
                                        name=subgroup.name):
-        response.status_code = 201
+        response.status_code = 200
 
     new_subgroup = await db_manager.create_subgroup(
         session,
@@ -181,7 +181,7 @@ async def get_teachers(session: AsyncSession = Depends(get_session)):
     return forms.TeacherList(teachers=teachers)
 
 
-@router.post('/school/{school_id}/lesson', response_model=forms.Lesson, status_code=200)
+@router.post('/school/{school_id}/lesson', response_model=forms.Lesson, status_code=201)
 async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
@@ -189,7 +189,7 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
                                      lesson.name, dict(lesson.start_time),
                                      dict(lesson.end_time), lesson.week,
                                      lesson.weekday, lesson.teacher_id):
-        response.status_code = 201
+        response.status_code = 200
     lesson = await db_manager.create_lesson(
         session, school_id=school_id,
         name=lesson.name, start_time=dict(lesson.start_time),
@@ -211,13 +211,13 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
 
 
 @router.post('/subgroup/{subgroup_id}/lesson',
-             response_model=forms.LessonOfGroup, status_code=200)
+             response_model=forms.LessonOfGroup, status_code=201)
 async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
                      session: AsyncSession = Depends(get_session),
                      response: Response = Response):
     if await db_manager.subgroup_lesson_exist(session, lesson.lesson_id,
                                               subgroup_id):
-        response.status_code = 201
+        response.status_code = 200
     res = await db_manager.add_lesson_to_subgroup(session, lesson.lesson_id,
                                                   subgroup_id)
     return forms.LessonOfGroup(
@@ -258,6 +258,19 @@ async def get_today_lessons(subgroup_id: int,
         lessons=lessons,
         subgroup_id=subgroup_id
     )
+
+
+@router.delete('/subgroup/{subgroup_id}/lesson/{lesson_id}',
+               response_model=forms.DeletingMessageForSubgroupLesson,
+               status_code=200)
+async def delete_subgroup_lesson(subgroup_id: int, lesson_id: int,
+                                 session: AsyncSession = Depends(get_session),
+                                 response: Response = Response):
+    msg: str = 'Delete lesson'
+    if not await db_manager.delete_subgroup_lesson(session, subgroup_id, lesson_id):
+        response.status_code = 406
+        msg = 'Lesson doesnt exist'
+    return forms.DeletingMessageForSubgroupLesson(msg=msg, lesson_id=lesson_id, subgroup_id=subgroup_id)
 
 
 @router.delete('/lesson/{lesson_id}', response_model=forms.DeletingMessage, status_code=200)
@@ -302,3 +315,4 @@ async def delete_school(school_id: int,
         response.status_code = 406
         msg = 'School doesnt exist'
     return forms.DeletingMessage(msg=msg, id=school_id)
+A
