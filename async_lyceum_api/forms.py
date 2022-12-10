@@ -112,16 +112,6 @@ class LessonListByClassID(BaseModel):
     lessons: list[Lesson]
 
 
-class DeletingMessage(Message):
-    id: int
-
-
 class DaySubgroupLessons(LessonList):
     weekday: int
     week: int
-
-
-class DeletingMessageForSubgroupLesson(Message):
-    subgroup_id: int
-    lesson_id: int
-
