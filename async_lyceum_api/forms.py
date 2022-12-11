@@ -74,10 +74,16 @@ class LessonWithoutID(BaseModel):
     end_time: Time
     week: int
     weekday: int = Field(..., ge=0, le=6)
+
+
+class LessonWithoutIDWithTeacherID(LessonWithoutID):
     teacher_id: int
 
+class LessonWithoutIDWithTeacher(LessonWithoutID):
+    teacher: Teacher
 
-class Lesson(LessonWithoutID):
+
+class Lesson(LessonWithoutIDWithTeacher):
     lesson_id: int
 
 

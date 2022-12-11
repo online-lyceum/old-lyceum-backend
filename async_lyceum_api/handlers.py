@@ -18,12 +18,13 @@ router = APIRouter(prefix='/api')
 async def transform_db_lessons_to_lesson_forms(
         lessons: AsyncResult | list) -> list[forms.LessonType]:
     if isinstance(lessons, AsyncResult):
-        return [_transform_db_lesson_to_lesson_form(lesson) async for lesson, in lessons]
+        return [_transform_db_lesson_to_lesson_form(lesson, teacher) async for lesson, teacher in lessons]
     else:
-        return [_transform_db_lesson_to_lesson_form(lesson) for lesson, in lessons]
+        return [_transform_db_lesson_to_lesson_form(lesson, teacher) for lesson, teacher in lessons]
 
 
-def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson):
+def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson,
+                                        teacher: db_manager.db.Teacher):
     logger.debug(f'{type(lesson)=}')
     return forms.Lesson(
             lesson_id=lesson.lesson_id,
@@ -38,7 +39,10 @@ def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson):
             ),
             week=lesson.week,
             weekday=lesson.weekday,
-            teacher_id=lesson.teacher_id
+            teacher=forms.Teacher(
+                teacher_id=teacher.teacher_id,
+                name=teacher.name
+            )
         )
 
 
@@ -182,7 +186,7 @@ async def get_teachers(session: AsyncSession = Depends(get_session)):
 
 
 @router.post('/school/{school_id}/lesson', response_model=forms.Lesson, status_code=201)
-async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
+async def create_lesson(school_id: int, lesson: forms.LessonWithoutIDWithTeacherID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
     if await db_manager.lesson_exist(session, school_id,
@@ -190,7 +194,7 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
                                      dict(lesson.end_time), lesson.week,
                                      lesson.weekday, lesson.teacher_id):
         response.status_code = 200
-    lesson = await db_manager.create_lesson(
+    lesson, teacher = await db_manager.create_lesson_and_get_teacher(
         session, school_id=school_id,
         name=lesson.name, start_time=dict(lesson.start_time),
         end_time=dict(lesson.end_time), week=lesson.week,
@@ -206,7 +210,10 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutID,
                             minute=lesson.end_time.minute),
         week=lesson.week,
         weekday=lesson.weekday,
-        teacher_id=lesson.teacher_id
+        teacher=forms.Teacher(
+            name=teacher.name,
+            teacher_id=teacher.teacher_id
+        )
     )
 
 

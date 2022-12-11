@@ -49,11 +49,13 @@ class LessonList:
         self.session = session
 
     async def get_all_lessons(self):
-        query = select(db.Lesson).join(db.LessonSubgroup)
+        query = select(db.Lesson, db.Teacher)
+        query = query.join(db.LessonSubgroup).join(db.Teacher).join(db.Subgroup)
         if self.subgroup_id is not None:
-            query = query.filter_by(subgroup_id=self.subgroup_id)
+            query = query.filter(db.LessonSubgroup.subgroup_id == self.subgroup_id)
         else:
-            query = query.filter_by(subgroup_id=self.class_id)
+            query = query.join(db.Class)
+            query = query.filter(db.Class.class_id == self.class_id)
         return await self.session.stream(query)
 
     async def get_current_or_next_day_with_lessons(self
@@ -80,9 +82,10 @@ class LessonList:
     async def _get_day_lesson_steam(self, weekday: int, week: int = 0) -> AsyncResult:
         if week != 0:
             raise NotImplementedError("Double week support did not implemented")
-        query = select(db.Lesson)
+        query = select(db.Lesson, db.Teacher)
         query = query.select_from(db.Lesson)
         query = query.join(db.LessonSubgroup)
+        query = query.join(db.Teacher)
         if self.subgroup_id is not None:
             query = query.filter(db.LessonSubgroup.subgroup_id == self.subgroup_id)
         else:
@@ -98,7 +101,7 @@ class LessonList:
             weekday: int,
             week: int = 0) -> list[sqlalchemy.engine.Row]:
         lesson_steam = await self._get_day_lesson_steam(weekday, week)
-        return [lesson async for lesson in lesson_steam]
+        return [lesson_and_teacher async for lesson_and_teacher in lesson_steam]
 
     async def _has_today_lessons(self):
         today = datetime.today()
@@ -107,7 +110,7 @@ class LessonList:
         if not lessons:
             return False
         day_end_time = time(0, 0)
-        for lesson, in lessons:
+        for lesson, teacher in lessons:
             lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
             day_end_time = max(lesson_end_time, day_end_time)
         return day_end_time < datetime.now().time()
@@ -206,10 +209,12 @@ async def get_teachers(session: AsyncSession):
     return await session.stream(query)
 
 
-async def create_lesson(session: AsyncSession, school_id: int,
-                        name: str, start_time: dict[str, int],
-                        end_time: dict[str, int], week: int,
-                        weekday: int, teacher_id: int):
+async def create_lesson_and_get_teacher(session: AsyncSession, school_id: int,
+                                        name: str, start_time: dict[str, int],
+                                        end_time: dict[str, int], week: int,
+                                        weekday: int, teacher_id: int):
+    teacher_query = select(db.Teacher).filter_by(teacher_id=teacher_id)
+    teacher = (await session.execute(teacher_query)).one()[0]
     query = select(db.Lesson).filter_by(name=name)
     query = query.filter_by(start_time=time(hour=start_time['hour'],
                                             minute=start_time['minute']))
@@ -221,7 +226,7 @@ async def create_lesson(session: AsyncSession, school_id: int,
     query = query.filter_by(school_id=school_id)
 
     try:
-        return (await session.execute(query)).one()[0]
+        return (await session.execute(query)).one()[0],teacher
     except exc.NoResultFound:
         new_lesson = db.Lesson(
             name=name,
@@ -236,7 +241,7 @@ async def create_lesson(session: AsyncSession, school_id: int,
         )
         session.add(new_lesson)
         await session.commit()
-        return new_lesson
+        return new_lesson, teacher
 
 
 async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
@@ -254,8 +259,8 @@ async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
 
 
 async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
-    query = select(db.Lesson).join(db.LessonSubgroup)
-    query = query.join(db.Subgroup).join(db.Class)
+    query = select(db.Lesson, db.Teacher).join(db.LessonSubgroup)
+    query = query.join(db.Subgroup).join(db.Class).join(db.Teacher)
     query = query.filter(db.Class.class_id == class_id)
     return await session.stream(query)
 
