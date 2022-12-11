@@ -356,3 +356,14 @@ async def subgroup_lesson_exist(session: AsyncSession, lesson_id: int,
     query = select(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
     query = query.filter_by(lesson_id=lesson_id)
     return await _is_exist_(session, query)
+
+async def get_subgroup_info(session: AsyncSession,
+                            subgroup_id: int) -> sqlalchemy.engine.Row:
+    query = select(
+        db.Subgroup,
+        db.Class,
+        db.School
+    )
+    query = query.select_from(db.Subgroup).filter_by(subgroup_id=subgroup_id)
+    query = query.join(db.Class).join(db.School)
+    return (await session.execute(query)).one()

@@ -149,6 +149,22 @@ async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
     )
 
 
+@router.get('/subgroup/{subgroup_id}')
+async def get_subgroup(subgroup_id: int,
+                       session: AsyncSession = Depends(get_session)):
+    res = await db_manager.get_subgroup_info(session, subgroup_id=subgroup_id)
+    subgroup, class_, school = res
+    return forms.SubgroupInfo(
+        subgroup_id=subgroup.subgroup_id,
+        subgroup_name=subgroup.name,
+        class_id=class_.class_id,
+        class_number=class_.number,
+        class_letter=class_.letter,
+        school_id=class_.school_id,
+        school_name=school.name
+    )
+
+
 @router.get('/class/{class_id}/subgroup', response_model=forms.SubgroupList)
 async def get_subgroups(class_id: int,
                         session: AsyncSession = Depends(get_session)):
