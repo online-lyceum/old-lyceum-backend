@@ -2,6 +2,7 @@ version: '3'
 services:
   api:
     image: "time_api:${JOB_NAME}"
+    container_name: "time_api_${JOB_NAME}"
     restart: always
     depends_on:
       - "postgres"
