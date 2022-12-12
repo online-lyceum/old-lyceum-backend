@@ -10,7 +10,6 @@ services:
     ports:
       - "8080:80"
     networks:
-      front_net:
       default:
 
   postgres:
@@ -20,7 +19,3 @@ services:
       - .variables.env
     networks:
       default:
-
-networks:
-  front_net:
-    external: true

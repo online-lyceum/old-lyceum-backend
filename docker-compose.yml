@@ -2,7 +2,6 @@ version: '3'
 services:
   api:
     image: "time_api:${JOB_NAME}"
-    container_name: "${JOB_NAME}_time_api"
     restart: always
     depends_on:
       - "postgres"
@@ -14,7 +13,6 @@ services:
 
   postgres:
     image: postgres
-    container_name: "${JOB_NAME}_postgres"
     restart: always
     env_file:
       - .variables.env
