@@ -69,7 +69,7 @@ class LessonList:
             )
         else:
             logger.debug('Has not lessons today')
-            for i in range(1, 7):
+            for i in range(1, 8):
                 weekday = (datetime.today().weekday() + i) % 7
                 lessons = await self._get_day_lesson_rows(weekday)
                 logger.debug(f'Lessons on {weekday=} is {lessons}')
