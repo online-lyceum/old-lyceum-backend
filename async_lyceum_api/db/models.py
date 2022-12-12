@@ -3,7 +3,21 @@ from sqlalchemy import String
 from sqlalchemy import Integer
 from sqlalchemy import Time
 from sqlalchemy import ForeignKey
+from sqlalchemy import UniqueConstraint
 from async_lyceum_api.db.base import Base
+
+
+class Address(Base):
+    __tablename__ = "addresses"
+
+    address_id = Column(Integer, autoincrement=True, primary_key=True,
+                        index=True)
+    city = Column(String)
+    place = Column(String)
+
+    __table_args__ = (
+        UniqueConstraint('city', 'place', name='uq_city_place'),
+    )
 
 
 class School(Base):
@@ -12,7 +26,11 @@ class School(Base):
     school_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
     name = Column(String)
-    address = Column(String)
+    address_id = Column(ForeignKey('addresses.address_id'))
+
+    __table_args__ = (
+        UniqueConstraint('name', 'address_id', name='uq_name_address'),
+    )
 
 
 class ClassType(Base):
@@ -20,7 +38,7 @@ class ClassType(Base):
     __tablename__ = "class_types"
     class_type_id = Column(Integer, autoincrement=True, primary_key=True,
                            index=True)
-    name = Column(String)
+    name = Column(String, unique=True)
 
 
 class Class(Base):
@@ -33,6 +51,11 @@ class Class(Base):
     letter = Column(String)
     class_type_id = Column(ForeignKey('class_types.class_type_id'))
 
+    __table_args__ = (
+        UniqueConstraint('school_id', 'number', 'letter', 'class_type_id',
+                         name='uq_class_constraint'),
+    )
+
 
 class Subgroup(Base):
     """Подгруппы в классе"""
@@ -42,6 +65,10 @@ class Subgroup(Base):
                          index=True)
     class_id = Column(ForeignKey('classes.class_id', ondelete='CASCADE'))
     name = Column(String)
+
+    __table_args__ = (
+        UniqueConstraint('class_id', 'name', name='uq_class_id_name'),
+    )
 
 
 class Teacher(Base):
@@ -71,10 +98,10 @@ class LessonSubgroup(Base):
     И какие подгруппы будут на уроке."""
     __tablename__ = "lesson_subgroups"
     lesson_id = Column(
-        ForeignKey('lessons.lesson_id', ondelete='CASCADE'),
+        ForeignKey('lessons.lesson_id', ondelete='RESTRICT'),
         primary_key=True
     )
     subgroup_id = Column(
-        ForeignKey('subgroups.subgroup_id', ondelete='CASCADE'),
+        ForeignKey('subgroups.subgroup_id', ondelete='RESTRICT'),
         primary_key=True
     )

@@ -1,13 +1,18 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Message(BaseModel):
     msg: str
 
 
+class CityList(BaseModel):
+    cities: list[str]
+
+
 class SchoolWithoutID(BaseModel):
     name: str
-    address: str
+    city: str
+    place: str
 
 
 class School(SchoolWithoutID):
@@ -41,6 +46,15 @@ class Subgroup(SubgroupWithoutID):
     subgroup_id: int
 
 
+class SubgroupInfo(BaseModel):
+    subgroup_id: int
+    subgroup_name: str
+    class_id: int
+    class_number: int
+    class_letter: str
+    school_id: int
+    school_name: str
+
 class SubgroupList(BaseModel):
     class_id: int
     subgroups: list[Subgroup]
@@ -68,11 +82,17 @@ class LessonWithoutID(BaseModel):
     start_time: Time
     end_time: Time
     week: int
-    weekday: int
+    weekday: int = Field(..., ge=0, le=6)
+
+
+class LessonWithoutIDWithTeacherID(LessonWithoutID):
     teacher_id: int
 
+class LessonWithoutIDWithTeacher(LessonWithoutID):
+    teacher: Teacher
 
-class Lesson(LessonWithoutID):
+
+class Lesson(LessonWithoutIDWithTeacher):
     lesson_id: int
 
 
@@ -84,14 +104,22 @@ class LessonOfGroup(OnlyLessonID):
     subgroup_id: int
 
 
+LessonType = Lesson | LessonOfGroup
+
+
 class LessonList(BaseModel):
     subgroup_id: int
     lessons: list[Lesson]
 
 
-class LessonListOfSubgroups(BaseModel):
-    class_id: int
-    lesson_list: list[LessonList]
+class Date(BaseModel):
+    weekday: int
+    day: int
+    month: int
+
+
+class DayLessonList(LessonList):
+    date: Date
 
 
 class LessonListByClassID(BaseModel):
@@ -99,5 +127,6 @@ class LessonListByClassID(BaseModel):
     lessons: list[Lesson]
 
 
-class DeletingMessage(Message):
-    id: int
+class DaySubgroupLessons(LessonList):
+    weekday: int
+    week: int

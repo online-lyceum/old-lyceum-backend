@@ -15,12 +15,12 @@ git clone https://github.com/prostoLavr/async_lyceum_api.git
 ```
 ### Создание виртуального окружения
 ```shell
-#Для Linux
+#На Linux
 python3 -m venv venv
 source ./venv/bin/activate
 ```
 ```shell
-#Для Windows
+#На Windows
 python -m venv venv
 venv/Scripts/activate.bat
 ```
@@ -35,7 +35,7 @@ pip3 install -e .  # <- Точка в конце обязательна!
 
 ### Запуск в режиме для разработки
 ```shell
-#Для Linux
+#На Linux
 
 # Запуск postgresql в docker
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
@@ -47,7 +47,7 @@ init_models
 gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
 ```
 ```shell
-#Для Windows
+#На Windows
 
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
 init_db
