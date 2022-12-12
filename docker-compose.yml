@@ -1,20 +1,18 @@
 version: '3'
 services:
-  async_lyceum_api:
-    image: async-lyceum-api
+  api:
+    image: "time_api:${JOB_NAME}"
     restart: always
     depends_on:
       - "postgres"
     env_file:
       - .variables.env
-    volumes:
-      - "lyceum-images:/images"
     networks:
       front_net:
       default:
 
   postgres:
-    image: postgres:15.1
+    image: postgres
     restart: always
     env_file:
       - .variables.env
@@ -24,7 +22,3 @@ services:
 networks:
   front_net:
     external: true
-
-
-volumes:
-  lyceum-images:
