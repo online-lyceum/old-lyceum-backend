@@ -12,7 +12,7 @@ pipeline {
             steps {
                 sh 'docker-compose up -d'
                 sh 'sleep 5'
-                bash 'docker-compose exec -d ${JOB_NAME,,}_time_api init_models'
+                sh 'bash -c docker-compose exec -d ${JOB_NAME,,}_time_api init_models'
             }
         }
     }
