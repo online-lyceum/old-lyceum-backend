@@ -46,12 +46,12 @@ def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson,
         )
 
 
-@router.get('/', response_model=forms.Message)
+@router.get('/', response_model=forms.Message, tags=["Test"])
 async def get_hello_msg():
     return forms.Message(msg='Hello from FastAPI and Lawrence')
 
 
-@router.get('/city', response_model=forms.CityList)
+@router.get('/city', response_model=forms.CityList, tags=["Get"])
 async def get_cities(session: AsyncSession = Depends(get_session)):
     cities = []
     async for city, in await db_manager.get_cities(session):
@@ -59,7 +59,7 @@ async def get_cities(session: AsyncSession = Depends(get_session)):
     return forms.CityList(cities=cities)
 
 
-@router.get('/school', response_model=forms.SchoolList)
+@router.get('/school', response_model=forms.SchoolList, tags=["Get"])
 async def get_schools(session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_school_list(session)
     schools = []
@@ -75,7 +75,9 @@ async def get_schools(session: AsyncSession = Depends(get_session)):
     return forms.SchoolList(schools=schools)
 
 
-@router.post('/school', response_model=forms.School, status_code=201)
+@router.post('/school', response_model=forms.School,
+             tags=["Create"],
+             status_code=201)
 async def create_school(school: forms.SchoolWithoutID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
@@ -92,7 +94,7 @@ async def create_school(school: forms.SchoolWithoutID,
     )
 
 
-@router.get('/school/{school_id}/class', response_model=forms.ClassList)
+@router.get('/school/{school_id}/class', response_model=forms.ClassList, tags=["Get"])
 async def get_classes(school_id: int,
                       session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_classes(session, school_id=school_id)
@@ -109,7 +111,9 @@ async def get_classes(school_id: int,
     return forms.ClassList(school_id=school_id, classes=classes)
 
 
-@router.post('/school/{school_id}/class', response_model=forms.Class, status_code=201)
+@router.post('/school/{school_id}/class', response_model=forms.Class,
+             tags=["Create"],
+             status_code=201)
 async def create_class(school_id: int, class_: forms.ClassWithoutID,
                        session: AsyncSession = Depends(get_session),
                        response: Response = Response):
@@ -129,7 +133,9 @@ async def create_class(school_id: int, class_: forms.ClassWithoutID,
     )
 
 
-@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup, status_code=201)
+@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup,
+             tags=["Create"],
+             status_code=201)
 async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
                           session: AsyncSession = Depends(get_session),
                           response: Response = Response):
@@ -149,7 +155,7 @@ async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
     )
 
 
-@router.get('/subgroup/{subgroup_id}')
+@router.get('/subgroup/{subgroup_id}', tags=["Get"])
 async def get_subgroup(subgroup_id: int,
                        session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_subgroup_info(session, subgroup_id=subgroup_id)
@@ -165,7 +171,7 @@ async def get_subgroup(subgroup_id: int,
     )
 
 
-@router.get('/class/{class_id}/subgroup', response_model=forms.SubgroupList)
+@router.get('/class/{class_id}/subgroup', response_model=forms.SubgroupList, tags=["Get"])
 async def get_subgroups(class_id: int,
                         session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_subgroups(session, class_id=class_id)
@@ -182,7 +188,7 @@ async def get_subgroups(class_id: int,
     )
 
 
-@router.post('/teacher', response_model=forms.Teacher)
+@router.post('/teacher', response_model=forms.Teacher, tags=["Create"])
 async def create_teacher(teacher: forms.TeacherWithoutID,
                          session: AsyncSession = Depends(get_session)):
     res = await db_manager.create_teacher(session, name=teacher.name)
@@ -192,7 +198,7 @@ async def create_teacher(teacher: forms.TeacherWithoutID,
     )
 
 
-@router.get('/teacher', response_model=forms.TeacherList)
+@router.get('/teacher', response_model=forms.TeacherList, tags=["Get"])
 async def get_teachers(session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_teachers(session)
     teachers = []
@@ -201,7 +207,9 @@ async def get_teachers(session: AsyncSession = Depends(get_session)):
     return forms.TeacherList(teachers=teachers)
 
 
-@router.post('/school/{school_id}/lesson', response_model=forms.Lesson, status_code=201)
+@router.post('/school/{school_id}/lesson', response_model=forms.Lesson,
+             tags=["Create"],
+             status_code=201)
 async def create_lesson(school_id: int, lesson: forms.LessonWithoutIDWithTeacherID,
                         session: AsyncSession = Depends(get_session),
                         response: Response = Response):
@@ -234,7 +242,8 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutIDWithTeacher
 
 
 @router.post('/subgroup/{subgroup_id}/lesson',
-             response_model=forms.LessonOfGroup, status_code=201)
+             response_model=forms.LessonOfGroup, tags=["Add"],
+             status_code=201)
 async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
                      session: AsyncSession = Depends(get_session),
                      response: Response = Response):
@@ -249,7 +258,8 @@ async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
     )
 
 
-@router.get('/subgroup/{subgroup_id}/lesson', response_model=forms.LessonList)
+@router.get('/subgroup/{subgroup_id}/lesson', response_model=forms.LessonList,
+            tags=["Get"])
 async def get_lessons(subgroup_id: int,
                       session: AsyncSession = Depends(get_session)):
     lesson_list = db_manager.LessonList(session, subgroup_id)
@@ -259,7 +269,8 @@ async def get_lessons(subgroup_id: int,
 
 
 @router.get('/class/{class_id}/lesson',
-            response_model=forms.LessonListByClassID)
+            response_model=forms.LessonListByClassID,
+            tags=["Get"])
 async def get_lessons(class_id: int,
                       session: AsyncSession = Depends(get_session)):
     db_lesson_rows = await db_manager.get_lessons_by_class_id(session, class_id)
@@ -268,7 +279,8 @@ async def get_lessons(class_id: int,
 
 
 @router.get('/subgroup/{subgroup_id}/lessons_to_show_today',
-            response_model=forms.DaySubgroupLessons)
+            response_model=forms.DaySubgroupLessons,
+            tags=["Get"])
 async def get_today_lessons(subgroup_id: int,
                             session: AsyncSession = Depends(get_session)):
     lesson_list = db_manager.LessonList(session, subgroup_id)
@@ -283,31 +295,31 @@ async def get_today_lessons(subgroup_id: int,
     )
 
 
-@router.delete('/subgroup/{subgroup_id}/lesson/{lesson_id}', status_code=204)
+@router.delete('/subgroup/{subgroup_id}/lesson/{lesson_id}', tags=["Delete"], status_code=204)
 async def delete_subgroup_lesson(subgroup_id: int, lesson_id: int,
                                  session: AsyncSession = Depends(get_session)):
     await db_manager.delete_subgroup_lesson(session, subgroup_id, lesson_id)
 
 
-@router.delete('/lesson/{lesson_id}', status_code=204)
+@router.delete('/lesson/{lesson_id}', tags=["Delete"], status_code=204)
 async def delete_lesson(lesson_id: int,
                         session: AsyncSession = Depends(get_session)):
     await db_manager.delete_lesson(session, lesson_id)
 
 
-@router.delete('/subgroup/{subgroup_id}', status_code=204)
+@router.delete('/subgroup/{subgroup_id}', tags=["Delete"], status_code=204)
 async def delete_subgroup(subgroup_id: int,
                           session: AsyncSession = Depends(get_session)):
     await db_manager.delete_subgroup(session, subgroup_id)
 
 
-@router.delete('/class/{class_id}', status_code=204)
+@router.delete('/class/{class_id}', tags=["Delete"], status_code=204)
 async def delete_class(class_id: int,
                        session: AsyncSession = Depends(get_session)):
     await db_manager.delete_class(session, class_id)
 
 
-@router.delete('/school/{school_id}', status_code=204)
+@router.delete('/school/{school_id}', tags=["Delete"], status_code=204)
 async def delete_school(school_id: int,
                         session: AsyncSession = Depends(get_session)):
     await db_manager.delete_school(session, school_id)
