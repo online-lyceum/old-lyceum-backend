@@ -1,18 +1,11 @@
 #!groovy
 
-properties([disableConcurrentBuilds()])
-
 pipeline {
     agent any
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
-        timestamps()
-    }
-    triggers { pollSCM('* * * * *') }
     stages {
         stage("Build image") {
             steps {
-                sh 'docker build -t async-lyceum-api .'
+                sh 'docker build -t time_api:$JOB_NAME .'
             }
         }
         stage("Run images") {
