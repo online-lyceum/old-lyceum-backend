@@ -4,7 +4,7 @@ from sqlalchemy import Integer
 from sqlalchemy import Time
 from sqlalchemy import ForeignKey
 from sqlalchemy import UniqueConstraint
-from async_lyceum_api.db.base import Base
+from time_api.db.base import Base
 
 
 class Address(Base):
