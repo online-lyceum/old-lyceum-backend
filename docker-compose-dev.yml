@@ -1,7 +1,7 @@
 version: '3'
 services:
   api:
-    image: "time_api:${JOB_NAME}"
+    image: "time_api"
     restart: always
     depends_on:
       - "postgres"
