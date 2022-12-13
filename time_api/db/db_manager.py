@@ -3,9 +3,9 @@ import asyncio
 
 import sqlalchemy.engine
 
-from async_lyceum_api import db
-from async_lyceum_api.db import my_exc
-from async_lyceum_api.db.base import init_models
+from time_api import db
+from time_api.db import my_exc
+from time_api.db.base import init_models
 
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncResult
 from sqlalchemy import select

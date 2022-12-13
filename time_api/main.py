@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 
-from async_lyceum_api.handlers import router
-from async_lyceum_api.description import application_metadata
+from time_api.handlers import router
+from time_api.description import application_metadata
 import logging
 
 
