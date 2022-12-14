@@ -203,7 +203,10 @@ async def get_teachers(session: AsyncSession = Depends(get_session)):
     res = await db_manager.get_teachers(session)
     teachers = []
     async for teacher, in res:
-        teachers.append(forms.Teacher(name=teacher.name))
+        teachers.append(forms.Teacher(
+            teacher_id=teacher.teacher_id,
+            name=teacher.name
+        ))
     return forms.TeacherList(teachers=teachers)
 
 
