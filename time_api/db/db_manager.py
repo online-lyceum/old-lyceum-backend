@@ -177,15 +177,13 @@ async def add_class(session: AsyncSession, school_id: int, number: int,
         return new_class, class_type
 
 
-async def create_subgroup(session: AsyncSession, class_id: int, name: str):
-    query = select(db.Subgroup).filter_by(class_id=class_id, name=name)
-    try:
-        return (await session.execute(query)).one()[0]
-    except exc.NoResultFound:
-        new_subgroup = db.Subgroup(class_id=class_id, name=name)
-        session.add(new_subgroup)
-        await session.commit()
-        return new_subgroup
+def create_subgroup(session, class_id: int, name: str):
+    subgroup = session.query(db.Subgroup).filter_by(class_id=class_id, name=name).first()
+    if subgroup is None:
+        subgroup = db.Subgroup(class_id=class_id, name=name)
+        session.add(subgroup)
+        session.commit()
+    return subgroup
 
 
 async def get_subgroups(session: AsyncSession, class_id: int):

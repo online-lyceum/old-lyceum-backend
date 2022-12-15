@@ -145,11 +145,9 @@ async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
                                        name=subgroup.name):
         response.status_code = 200
 
-    new_subgroup = await db_manager.create_subgroup(
-        session,
-        class_id=class_id,
-        name=subgroup.name
-    )
+    new_subgroup = await session.run_sync(db_manager.create_subgroup,
+                                          class_id=class_id,
+                                          name=subgroup.name)
     return forms.Subgroup(
         subgroup_id=new_subgroup.subgroup_id,
         name=new_subgroup.name
