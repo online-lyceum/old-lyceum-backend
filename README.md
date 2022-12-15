@@ -44,7 +44,7 @@ init_db
 # Инициализация создания таблиц (вызывается скрипт из этого проекта)
 init_models
 # Запуск gunicorn с uvicorn worker'ом. по адресу 127.0.0.1:8080
-gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
+gunicorn time_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
 ```
 ```shell
 #На Windows
@@ -52,7 +52,7 @@ gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
 init_db
 init_models
-uvicorn async_lyceum_api.main:app
+uvicorn time_api.main:app
 ```
 
 ## Установка в docker образ
@@ -74,5 +74,5 @@ docker build -t async-lyceum-api .  # <- Точка в конце обязате
 # Запуск проекта на порту 8080
 docker-compose up -d -f docker-compose-dev.yml
 # Инициализация таблиц в базе данных
-docker-compose exec -d async_lyceum_api init_models
+docker-compose exec -d time_api init_models
 ```
