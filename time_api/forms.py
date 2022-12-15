@@ -55,6 +55,7 @@ class SubgroupInfo(BaseModel):
     school_id: int
     school_name: str
 
+
 class SubgroupList(BaseModel):
     class_id: int
     subgroups: list[Subgroup]
@@ -87,6 +88,7 @@ class LessonWithoutID(BaseModel):
 
 class LessonWithoutIDWithTeacherID(LessonWithoutID):
     teacher_id: int
+
 
 class LessonWithoutIDWithTeacher(LessonWithoutID):
     teacher: Teacher

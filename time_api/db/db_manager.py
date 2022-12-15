@@ -12,7 +12,6 @@ from sqlalchemy import select
 from sqlalchemy import exc
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +32,6 @@ async def get_school_list(session: AsyncSession):
 async def get_cities(session: AsyncSession):
     query = select(db.Address.city).distinct()
     return await session.stream(query)
-
 
 
 class LessonList:
@@ -59,7 +57,7 @@ class LessonList:
         return await self.session.stream(query)
 
     async def get_current_or_next_day_with_lessons(self
-        ) -> tuple[int, list[sqlalchemy.engine.Row]]:
+                                                   ) -> tuple[int, list[sqlalchemy.engine.Row]]:
         if await self._has_today_lessons():
             logger.debug('Has lessons today')
             lessons = await self._get_day_lesson_rows(datetime.today().weekday())
@@ -116,26 +114,24 @@ class LessonList:
         return day_end_time < datetime.now().time()
 
 
-async def add_school_with_address(session: AsyncSession, name: str,
-                                  city: str, place: str):
-    query = select(db.Address).filter_by(city=city, place=place)
-    try:
-        address = (await session.execute(query)).one()[0]
-    except exc.NoResultFound:
+def add_school_with_address(session, name: str,
+                            city: str, place: str):
+    address = session.query(db.Address).filter_by(city=city, place=place).first()
+    if address is None:
         new_address = db.Address(city=city, place=place)
         session.add(new_address)
-        await session.flush([new_address])
+        session.flush([new_address])
         address = new_address
 
-    query = select(db.School).filter_by(name=name,
-                                        address_id=address.address_id)
-    try:
-        return (await session.execute(query)).one()[0], address
-    except exc.NoResultFound:
+    school = session.query(db.School).filter_by(name=name,
+                                                address_id=address.address_id).first()
+    if school is None:
         new_school = db.School(name=name, address_id=address.address_id)
         session.add(new_school)
-        await session.commit()
-        return new_school, address
+        session.commit()
+        school = new_school
+
+    return school, address
 
 
 async def get_classes(session: AsyncSession, school_id: int):
@@ -226,7 +222,7 @@ async def create_lesson_and_get_teacher(session: AsyncSession, school_id: int,
     query = query.filter_by(school_id=school_id)
 
     try:
-        return (await session.execute(query)).one()[0],teacher
+        return (await session.execute(query)).one()[0], teacher
     except exc.NoResultFound:
         new_lesson = db.Lesson(
             name=name,
@@ -356,6 +352,7 @@ async def subgroup_lesson_exist(session: AsyncSession, lesson_id: int,
     query = select(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
     query = query.filter_by(lesson_id=lesson_id)
     return await _is_exist_(session, query)
+
 
 async def get_subgroup_info(session: AsyncSession,
                             subgroup_id: int) -> sqlalchemy.engine.Row:

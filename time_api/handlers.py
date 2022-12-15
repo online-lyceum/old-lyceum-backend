@@ -84,7 +84,8 @@ async def create_school(school: forms.SchoolWithoutID,
     if await db_manager.school_exist(session, **dict(school)):
         response.status_code = 200
 
-    new_school, address = await db_manager.add_school_with_address(session, **dict(school))
+    new_school, address = \
+        await session.run_sync(db_manager.add_school_with_address, **dict(school))
 
     return forms.School(
         school_id=new_school.school_id,
