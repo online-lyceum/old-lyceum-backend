@@ -59,79 +59,6 @@ async def get_cities(session: AsyncSession = Depends(get_session)):
     return forms.CityList(cities=cities)
 
 
-@router.get('/school', response_model=forms.SchoolList, tags=["Get"])
-async def get_schools(session: AsyncSession = Depends(get_session)):
-    res = await db_manager.get_school_list(session)
-    schools = []
-    async for school_id, name, city, place in res:
-        schools.append(
-            forms.School(
-                school_id=school_id,
-                name=name,
-                city=city,
-                place=place
-            )
-        )
-    return forms.SchoolList(schools=schools)
-
-
-@router.post('/school', response_model=forms.School,
-             tags=["Create"],
-             status_code=201)
-async def create_school(school: forms.SchoolWithoutID,
-                        session: AsyncSession = Depends(get_session),
-                        response: Response = Response):
-    if await db_manager.school_exist(session, **dict(school)):
-        response.status_code = 200
-
-    new_school, address = await db_manager.add_school_with_address(session, **dict(school))
-
-    return forms.School(
-        school_id=new_school.school_id,
-        name=new_school.name,
-        city=address.city,
-        place=address.place
-    )
-
-
-@router.get('/school/{school_id}/class', response_model=forms.ClassList, tags=["Get"])
-async def get_classes(school_id: int,
-                      session: AsyncSession = Depends(get_session)):
-    res = await db_manager.get_classes(session, school_id=school_id)
-    classes = []
-    async for x in res:
-        classes.append(
-            forms.Class(
-                class_id=x[0],
-                number=x[1],
-                letter=x[2],
-                class_type=x[3]
-            )
-        )
-    return forms.ClassList(school_id=school_id, classes=classes)
-
-
-@router.post('/school/{school_id}/class', response_model=forms.Class,
-             tags=["Create"],
-             status_code=201)
-async def create_class(school_id: int, class_: forms.ClassWithoutID,
-                       session: AsyncSession = Depends(get_session),
-                       response: Response = Response):
-    if await db_manager.class_exist(session, school_id=school_id, **dict(class_)):
-        response.status_code = 200
-
-    new_class, class_type = await db_manager.add_class(
-        session,
-        school_id=school_id,
-        **dict(class_)
-    )
-    return forms.Class(
-        class_id=new_class.class_id,
-        number=new_class.number,
-        letter=new_class.letter,
-        class_type=class_type
-    )
-
 
 @router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup,
              tags=["Create"],
@@ -281,7 +208,7 @@ async def get_lessons(class_id: int,
     return forms.LessonListByClassID(class_id=class_id, lessons=lessons)
 
 
-@router.get('/subgroup/{subgroup_id}/lessons_to_show_today',
+@router.get('/subgroup/{subgroup_id}/lesson/today',
             response_model=forms.DaySubgroupLessons,
             tags=["Get"])
 async def get_today_lessons(subgroup_id: int,

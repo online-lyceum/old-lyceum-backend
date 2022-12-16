@@ -21,8 +21,8 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'init_models = time_api.db.db_manager:run_init_models',
-            'init_db = time_api.db.create_base:run_init_db',
+            'init_models = time_api.db.base:run_init_models',
+            'init_db = time_api.db.create:run_init_db',
         ]
     }
 )
