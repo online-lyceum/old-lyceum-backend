@@ -250,8 +250,8 @@ async def add_lesson(subgroup_id: int, lesson: forms.OnlyLessonID,
     if await db_manager.subgroup_lesson_exist(session, lesson.lesson_id,
                                               subgroup_id):
         response.status_code = 200
-    res = await db_manager.add_lesson_to_subgroup(session, lesson.lesson_id,
-                                                  subgroup_id)
+    res = await session.run_sync(db_manager.add_lesson_to_subgroup, lesson.lesson_id,
+                                 subgroup_id)
     return forms.LessonOfGroup(
         subgroup_id=res.subgroup_id,
         lesson_id=res.lesson_id

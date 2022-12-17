@@ -236,18 +236,15 @@ def create_lesson_and_get_teacher(session, school_id: int,
     return lesson, teacher
 
 
-async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,
-                                 subgroup_id: int):
-    query = select(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
-    query = query.filter_by(lesson_id=lesson_id)
-    try:
-        return (await session.execute(query)).one()[0]
-    except exc.NoResultFound:
-        new_lesson_subgroup = db.LessonSubgroup(lesson_id=lesson_id,
-                                                subgroup_id=subgroup_id)
-        session.add(new_lesson_subgroup)
-        await session.commit()
-        return new_lesson_subgroup
+def add_lesson_to_subgroup(session, lesson_id: int, subgroup_id: int):
+    lesson_subgroup = session.query(db.LessonSubgroup).filter_by(subgroup_id=subgroup_id)
+    lesson_subgroup = lesson_subgroup.filter_by(lesson_id=lesson_id).first()
+    if lesson_subgroup is None:
+        lesson_subgroup = db.LessonSubgroup(lesson_id=lesson_id,
+                                            subgroup_id=subgroup_id)
+        session.add(lesson_subgroup)
+        session.commit()
+    return lesson_subgroup
 
 
 async def get_lessons_by_class_id(session: AsyncSession, class_id: int):
