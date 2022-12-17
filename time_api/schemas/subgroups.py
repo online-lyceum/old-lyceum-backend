@@ -1,12 +1,20 @@
 from pydantic import BaseModel
 
 
-class SubgroupWithoutID(BaseModel):
+class BaseSubgroup(BaseModel):
     name: str
+    class_id: int
 
 
-class Subgroup(SubgroupWithoutID):
+class SubgroupCreate(BaseSubgroup):
+    pass
+
+
+class Subgroup(BaseSubgroup):
     subgroup_id: int
+
+    class Config:
+        orm_mode = True
 
 
 class SubgroupInfo(BaseModel):
@@ -20,5 +28,4 @@ class SubgroupInfo(BaseModel):
 
 
 class SubgroupList(BaseModel):
-    class_id: int
     subgroups: list[Subgroup]

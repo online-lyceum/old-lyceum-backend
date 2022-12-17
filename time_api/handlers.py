@@ -46,73 +46,7 @@ def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson,
         )
 
 
-@router.get('/', response_model=forms.Message, tags=["Test"])
-async def get_hello_msg():
-    return forms.Message(msg='Hello from FastAPI and Lawrence')
 
-
-@router.get('/city', response_model=forms.CityList, tags=["Get"])
-async def get_cities(session: AsyncSession = Depends(get_session)):
-    cities = []
-    async for city, in await db_manager.get_cities(session):
-        cities.append(city)
-    return forms.CityList(cities=cities)
-
-
-
-@router.post('/class/{class_id}/subgroup', response_model=forms.Subgroup,
-             tags=["Create"],
-             status_code=201)
-async def create_subgroup(subgroup: forms.SubgroupWithoutID, class_id: int,
-                          session: AsyncSession = Depends(get_session),
-                          response: Response = Response):
-    if await db_manager.subgroup_exist(session,
-                                       class_id=class_id,
-                                       name=subgroup.name):
-        response.status_code = 200
-
-    new_subgroup = await db_manager.create_subgroup(
-        session,
-        class_id=class_id,
-        name=subgroup.name
-    )
-    return forms.Subgroup(
-        subgroup_id=new_subgroup.subgroup_id,
-        name=new_subgroup.name
-    )
-
-
-@router.get('/subgroup/{subgroup_id}', tags=["Get"])
-async def get_subgroup(subgroup_id: int,
-                       session: AsyncSession = Depends(get_session)):
-    res = await db_manager.get_subgroup_info(session, subgroup_id=subgroup_id)
-    subgroup, class_, school = res
-    return forms.SubgroupInfo(
-        subgroup_id=subgroup.subgroup_id,
-        subgroup_name=subgroup.name,
-        class_id=class_.class_id,
-        class_number=class_.number,
-        class_letter=class_.letter,
-        school_id=class_.school_id,
-        school_name=school.name
-    )
-
-
-@router.get('/class/{class_id}/subgroup', response_model=forms.SubgroupList, tags=["Get"])
-async def get_subgroups(class_id: int,
-                        session: AsyncSession = Depends(get_session)):
-    res = await db_manager.get_subgroups(session, class_id=class_id)
-    subgroups = []
-    async for subgroup, in res:
-        subgroups.append(forms.Subgroup(
-            subgroup_id=subgroup.subgroup_id,
-            class_id=subgroup.class_id,
-            name=subgroup.name
-        ))
-    return forms.SubgroupList(
-        class_id=class_id,
-        subgroups=subgroups
-    )
 
 
 @router.post('/teacher', response_model=forms.Teacher, tags=["Create"])

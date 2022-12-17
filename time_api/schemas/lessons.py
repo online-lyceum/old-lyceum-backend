@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from .times import Time
@@ -8,8 +10,9 @@ class BaseLesson(BaseModel):
     name: str
     start_time: Time
     end_time: Time
-    week: int
-    weekday: int = Field(..., ge=0, le=6)
+    week: Optional[bool] = None
+    weekday: int = Field(0, ge=0, le=6)
+    school_id: int
 
 
 class LessonCreate(BaseLesson):
@@ -24,26 +27,10 @@ class Lesson(BaseLesson):
         orm_mode = True
 
 
-class BaseLessonList(BaseModel):
+class LessonList(BaseModel):
     lessons: list[Lesson]
 
-    class Config:
-        orm_mode = True
 
-
-class LessonListBySubgroupID(BaseLessonList):
-    subgroup_id: int
-
-
-class LessonListByClassID(BaseLessonList):
-    class_id: int
-
-
-class DayLessonListByClassID(LessonListBySubgroupID):
-    weekday: int
-    week: int
-
-
-class DayLessonListBySubgroupID(LessonListByClassID):
+class DayLessonList(LessonList):
     weekday: int
     week: int

@@ -20,12 +20,11 @@ def create_application():
                           redoc_url='/api/redoc',
                           logger=logger,
                           **application_metadata)
-    for attribute in filter(lambda x: not x.startswith("_"), dir(api)):
-        logger.debug(f'Check {attribute} for router')
-        python_module = getattr(api, attribute)
-        if hasattr(python_module, 'router'):
-            logger.debug(f'Include {attribute} router')
-            application.include_router(python_module.router)
+    application.include_router(api.root.router)
+    application.include_router(api.schools.router)
+    application.include_router(api.classes.router)
+    application.include_router(api.subgroups.router)
+    application.include_router(api.lessons.router)
     return application
 
 

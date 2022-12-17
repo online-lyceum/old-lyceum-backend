@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from sqlalchemy import MetaData
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.ext.asyncio import create_async_engine
@@ -23,7 +24,15 @@ engine = create_async_engine(
     max_overflow=0,
     pool_reset_on_return=True
 )
-Base = declarative_base()
+convention = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+metadata = MetaData(naming_convention=convention)
+Base = declarative_base(metadata=metadata)
 async_session = sessionmaker(
     engine, class_=AsyncSession,
     expire_on_commit=False,

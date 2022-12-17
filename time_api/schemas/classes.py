@@ -1,13 +1,18 @@
+from typing import Optional
+
 from pydantic import BaseModel
+
+from .subgroups import Subgroup
 
 
 class BaseClass(BaseModel):
     number: int
     letter: str
+    school_id: int
 
 
 class ClassCreate(BaseClass):
-    school_id: int
+    pass
 
 
 class Class(BaseClass):
@@ -18,5 +23,4 @@ class Class(BaseClass):
 
 
 class ClassList(BaseModel):
-    school_id: int
     classes: list[Class]

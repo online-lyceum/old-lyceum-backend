@@ -63,13 +63,26 @@ class Lesson(Base):
 
     lesson_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
-    name = Column(String)
-    start_time = Column(Time)
-    end_time = Column(Time)
+    name = Column(String, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
     week = Column(Integer)
-    weekday = Column(Integer)
-    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'))
-    school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'))
+    weekday = Column(Integer, nullable=False)
+    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
+                        nullable=False)
+    school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'),
+                       nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'name',
+            'start_time',
+            'end_time',
+            'weekday',
+            'school_id',
+            'teacher_id'
+        ),
+    )
 
 
 class LessonSubgroup(Base):
