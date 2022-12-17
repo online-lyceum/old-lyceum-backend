@@ -203,26 +203,24 @@ async def get_teachers(session: AsyncSession):
     return await session.stream(query)
 
 
-async def create_lesson_and_get_teacher(session: AsyncSession, school_id: int,
-                                        name: str, start_time: dict[str, int],
-                                        end_time: dict[str, int], week: int,
-                                        weekday: int, teacher_id: int):
-    teacher_query = select(db.Teacher).filter_by(teacher_id=teacher_id)
-    teacher = (await session.execute(teacher_query)).one()[0]
-    query = select(db.Lesson).filter_by(name=name)
-    query = query.filter_by(start_time=time(hour=start_time['hour'],
-                                            minute=start_time['minute']))
-    query = query.filter_by(end_time=time(hour=end_time['hour'],
-                                          minute=end_time['minute']))
-    query = query.filter_by(week=week)
-    query = query.filter_by(weekday=weekday)
-    query = query.filter_by(teacher_id=teacher_id)
-    query = query.filter_by(school_id=school_id)
+def create_lesson_and_get_teacher(session, school_id: int,
+                                  name: str, start_time: dict[str, int],
+                                  end_time: dict[str, int], week: int,
+                                  weekday: int, teacher_id: int):
+    teacher = session.query(db.Teacher).filter_by(teacher_id=teacher_id).first()
 
-    try:
-        return (await session.execute(query)).one()[0], teacher
-    except exc.NoResultFound:
-        new_lesson = db.Lesson(
+    lesson = session.query(db.Lesson).filter_by(name=name)
+    lesson = lesson.filter_by(start_time=time(hour=start_time['hour'],
+                                              minute=start_time['minute']))
+    lesson = lesson.filter_by(end_time=time(hour=end_time['hour'],
+                                            minute=end_time['minute']))
+    lesson = lesson.filter_by(week=week)
+    lesson = lesson.filter_by(weekday=weekday)
+    lesson = lesson.filter_by(teacher_id=teacher_id)
+    lesson = lesson.filter_by(school_id=school_id).first()
+
+    if lesson is None:
+        lesson = db.Lesson(
             name=name,
             start_time=time(hour=start_time['hour'],
                             minute=start_time['minute']),
@@ -233,9 +231,9 @@ async def create_lesson_and_get_teacher(session: AsyncSession, school_id: int,
             teacher_id=teacher_id,
             school_id=school_id
         )
-        session.add(new_lesson)
-        await session.commit()
-        return new_lesson, teacher
+        session.add(lesson)
+        session.commit()
+    return lesson, teacher
 
 
 async def add_lesson_to_subgroup(session: AsyncSession, lesson_id: int,

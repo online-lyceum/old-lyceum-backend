@@ -1,6 +1,5 @@
 import logging
 
-
 from time_api.db import db_manager
 from time_api.db.base import get_session
 from time_api import forms
@@ -27,23 +26,23 @@ def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson,
                                         teacher: db_manager.db.Teacher):
     logger.debug(f'{type(lesson)=}')
     return forms.Lesson(
-            lesson_id=lesson.lesson_id,
-            name=lesson.name,
-            start_time=forms.Time(
-                hour=lesson.start_time.hour,
-                minute=lesson.start_time.minute
-            ),
-            end_time=forms.Time(
-                hour=lesson.end_time.hour,
-                minute=lesson.end_time.minute
-            ),
-            week=lesson.week,
-            weekday=lesson.weekday,
-            teacher=forms.Teacher(
-                teacher_id=teacher.teacher_id,
-                name=teacher.name
-            )
+        lesson_id=lesson.lesson_id,
+        name=lesson.name,
+        start_time=forms.Time(
+            hour=lesson.start_time.hour,
+            minute=lesson.start_time.minute
+        ),
+        end_time=forms.Time(
+            hour=lesson.end_time.hour,
+            minute=lesson.end_time.minute
+        ),
+        week=lesson.week,
+        weekday=lesson.weekday,
+        teacher=forms.Teacher(
+            teacher_id=teacher.teacher_id,
+            name=teacher.name
         )
+    )
 
 
 @router.get('/', response_model=forms.Message, tags=["Test"])
@@ -220,12 +219,11 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutIDWithTeacher
                                      dict(lesson.end_time), lesson.week,
                                      lesson.weekday, lesson.teacher_id):
         response.status_code = 200
-    lesson, teacher = await db_manager.create_lesson_and_get_teacher(
-        session, school_id=school_id,
-        name=lesson.name, start_time=dict(lesson.start_time),
-        end_time=dict(lesson.end_time), week=lesson.week,
-        weekday=lesson.weekday, teacher_id=lesson.teacher_id
-    )
+    lesson, teacher = await session.run_sync(db_manager.create_lesson_and_get_teacher,
+                                             school_id=school_id,
+                                             name=lesson.name, start_time=dict(lesson.start_time),
+                                             end_time=dict(lesson.end_time), week=lesson.week,
+                                             weekday=lesson.weekday, teacher_id=lesson.teacher_id)
     return forms.Lesson(
         school_id=school_id,
         lesson_id=lesson.lesson_id,
