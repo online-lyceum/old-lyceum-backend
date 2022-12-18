@@ -16,7 +16,7 @@ router = APIRouter(
 
 @router.get(
     '',
-    response_model=schemas.classes.ClassList
+    response_model=schemas.lessons.LessonList
 )
 async def get_lessons(
         subgroup_id: Optional[int] = None,
@@ -32,13 +32,31 @@ async def get_lessons(
     )
 
 
+@router.get(
+    '/today',
+    response_model=schemas.lessons.LessonList
+)
+async def get_today_lessons(
+        subgroup_id: Optional[int] = None,
+        class_id: Optional[int] = None,
+        service: LessonService = Depends(LessonService)
+):
+    lessons = await service.get_list(
+        class_id=class_id,
+        subgroup_id=subgroup_id
+    )
+    return schemas.lessons.LessonList(
+        lessons=lessons
+    )
+
+
 @router.post(
     '',
-    response_model=schemas.classes.Class,
+    response_model=schemas.lessons.Lesson,
     status_code=201,
     responses={
         200: {
-            'model': schemas.classes.Class,
+            'model': schemas.lessons.Lesson,
             'description': 'Объект уже существует'
         }
     }
@@ -48,4 +66,5 @@ async def create_class(
         service: LessonService = Depends(LessonService)
 ):
     return await service.create(lesson)
-#
+
+

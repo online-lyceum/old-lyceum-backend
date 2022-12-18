@@ -6,5 +6,6 @@ from . import (
     subgroups,
     teachers,
     times,
-    messages
+    messages,
+    semesters
 )

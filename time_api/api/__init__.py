@@ -1,1 +1,1 @@
-from . import classes, lessons, schools, subgroups, root
+from . import classes, lessons, schools, subgroups, teachers, root, semesters

@@ -12,19 +12,23 @@ class BaseLesson(BaseModel):
     end_time: Time
     week: Optional[bool] = None
     weekday: int = Field(0, ge=0, le=6)
+    room: str
     school_id: int
+
+
+class InternalLesson(BaseLesson):
+    lesson_id: int
+
+    class Config:
+        orm_mode = True
 
 
 class LessonCreate(BaseLesson):
     teacher_id: int
 
 
-class Lesson(BaseLesson):
-    lesson_id: BaseLesson
+class Lesson(InternalLesson):
     teacher: Teacher
-
-    class Config:
-        orm_mode = True
 
 
 class LessonList(BaseModel):
@@ -32,5 +36,6 @@ class LessonList(BaseModel):
 
 
 class DayLessonList(LessonList):
-    weekday: int
+    is_today: bool
+    weekday: Optional[int]
     week: int

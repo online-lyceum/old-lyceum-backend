@@ -5,6 +5,7 @@ from sqlalchemy import Time
 from sqlalchemy import Boolean
 from sqlalchemy import ForeignKey
 from sqlalchemy import UniqueConstraint
+from sqlalchemy import Date
 from time_api.db.base import Base
 
 
@@ -68,6 +69,7 @@ class Lesson(Base):
     end_time = Column(Time, nullable=False)
     week = Column(Integer)
     weekday = Column(Integer, nullable=False)
+    room = Column(String, nullable=False)
     teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
                         nullable=False)
     school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'),
@@ -79,6 +81,7 @@ class Lesson(Base):
             'start_time',
             'end_time',
             'weekday',
+            'room',
             'school_id',
             'teacher_id'
         ),
@@ -97,3 +100,16 @@ class LessonSubgroup(Base):
         ForeignKey('subgroups.subgroup_id', ondelete='RESTRICT'),
         primary_key=True
     )
+
+
+class Semester(Base):
+    """Время от каникул до каникул.
+    week_reverse - отвечает за порядок недель.
+    Неделя верхняя если (week_num + week_reverse) % 2 == 0"""
+    __tablename__ = "semesters"
+    semester_id = Column(Integer, autoincrement=True, primary_key=True,
+                         index=True)
+    school_id = Column(ForeignKey('schools.school_id'), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    week_reverse = Column(Boolean, default=False)

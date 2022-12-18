@@ -24,6 +24,8 @@ def create_application():
     application.include_router(api.schools.router)
     application.include_router(api.classes.router)
     application.include_router(api.subgroups.router)
+    application.include_router(api.teachers.router)
+    application.include_router(api.semesters.router)
     application.include_router(api.lessons.router)
     return application
 
