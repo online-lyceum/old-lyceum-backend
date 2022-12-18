@@ -22,11 +22,7 @@ async def get_classes(
         school_id: Optional[int] = None,
         service: ClassService = Depends(ClassService)
 ):
-    classes = await service.get_list(school_id)
-    return schemas.classes.ClassList(
-        school_id=school_id,
-        classes=classes
-    )
+    return await service.get_list(school_id)
 
 
 @router.post(

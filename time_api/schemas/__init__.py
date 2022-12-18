@@ -1,7 +1,7 @@
 from . import (
     classes,
     lessons,
-    lessons_subgroups,
+    subgroups_lessons,
     schools,
     subgroups,
     teachers,

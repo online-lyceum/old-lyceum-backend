@@ -5,8 +5,8 @@ from sqlalchemy import select, exc
 from fastapi import status, HTTPException
 
 from .base import BaseService
+from time_api import schemas
 from time_api.db import tables
-from time_api.schemas.classes import ClassCreate
 
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,17 @@ class ClassService(BaseService):
     async def get_list(
             self,
             school_id: Optional[int] = None
+    ):
+        return schemas.classes.ClassList(
+            school_id=school_id,
+            classes=await self._get_list(school_id=school_id)
+        )
+
+    async def _get_list(
+            self,
+            school_id: Optional[int] = None
     ) -> list[tables.Class]:
+
         query = select(tables.Class)
 
         if school_id is not None:
@@ -34,7 +44,7 @@ class ClassService(BaseService):
     async def get(
             self, *,
             class_id: Optional[int] = None,
-            class_schema: ClassCreate = None
+            class_schema: schemas.classes.ClassCreate = None
     ):
         query = select(tables.Class)
 
@@ -54,9 +64,14 @@ class ClassService(BaseService):
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND
             )
+
         return class_
 
-    async def create(self, class_schema: ClassCreate):
+    async def create(
+            self,
+            class_schema: schemas.classes.ClassCreate
+    ) -> tables.Class:
+
         try:
             new_class = tables.Class(**class_schema.dict())
 

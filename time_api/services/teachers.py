@@ -4,15 +4,20 @@ from sqlalchemy import select
 from fastapi import status, HTTPException
 
 from .base import BaseService
+from time_api import schemas
 from time_api.db import tables
-from time_api.schemas.teachers import TeacherCreate
 
 
 logger = logging.getLogger(__name__)
 
 
 class TeacherService(BaseService):
-    async def get_list(self) -> list[tables.Teacher]:
+    async def get_list(self):
+        return schemas.teachers.TeacherList(
+            teachers=await self._get_list()
+        )
+
+    async def _get_list(self) -> list[tables.Teacher]:
         query = select(tables.Teacher)
         teachers = list(await self.session.scalars(query))
         if not teachers:
@@ -35,7 +40,10 @@ class TeacherService(BaseService):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return teacher
 
-    async def create(self, teacher_schema: TeacherCreate):
+    async def create(
+            self,
+            teacher_schema: schemas.teachers.TeacherCreate
+    ):
         new_teacher = tables.Teacher(**teacher_schema.dict())
         self.session.add(new_teacher)
         await self.session.commit()

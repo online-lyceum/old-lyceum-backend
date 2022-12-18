@@ -23,12 +23,9 @@ async def get_lessons(
         class_id: Optional[int] = None,
         service: LessonService = Depends(LessonService)
 ):
-    lessons = await service.get_list(
+    return await service.get_list(
         class_id=class_id,
         subgroup_id=subgroup_id
-    )
-    return schemas.lessons.LessonList(
-        lessons=lessons
     )
 
 
@@ -41,12 +38,9 @@ async def get_today_lessons(
         class_id: Optional[int] = None,
         service: LessonService = Depends(LessonService)
 ):
-    lessons = await service.get_list(
+    return await service.get_today_list(
         class_id=class_id,
         subgroup_id=subgroup_id
-    )
-    return schemas.lessons.LessonList(
-        lessons=lessons
     )
 
 
@@ -61,10 +55,27 @@ async def get_today_lessons(
         }
     }
 )
-async def create_class(
+async def create_lesson(
         lesson: schemas.lessons.LessonCreate,
         service: LessonService = Depends(LessonService)
 ):
     return await service.create(lesson)
 
+
+@router.post(
+    '/subgroups',
+    response_model=schemas.subgroups_lessons.LessonSubgroup,
+    status_code=201,
+    responses={
+        200: {
+            'model': schemas.subgroups_lessons.LessonSubgroup,
+            'description': 'Объект уже существует'
+        }
+    }
+)
+async def add_subgroup_to_lesson(
+        subgroup_lesson: schemas.subgroups_lessons.LessonSubgroupCreate,
+        service: LessonService = Depends(LessonService)
+):
+    return await service.add_subgroup_to_lesson(subgroup_lesson=subgroup_lesson)
 

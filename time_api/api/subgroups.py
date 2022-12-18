@@ -22,11 +22,7 @@ async def get_subgroups(
         class_id: Optional[int] = None,
         service: SubgroupService = Depends(SubgroupService)
 ):
-    subgroups = await service.get_list(class_id=class_id)
-    return schemas.subgroups.SubgroupList(
-        class_id=class_id,
-        subgroups=subgroups
-    )
+    return await service.get_list(class_id=class_id)
 
 
 @router.post(
@@ -45,3 +41,15 @@ async def create_subgroup(
         service: SubgroupService = Depends(SubgroupService)
 ):
     return await service.create(subgroup)
+
+
+@router.get(
+    '/{subgroup_id}',
+    response_model=schemas.subgroups.Subgroup
+)
+async def get_subgroup(
+        subgroup_id: int,
+        service: SubgroupService = Depends(SubgroupService)
+):
+    return await service.get(subgroup_id=subgroup_id)
+

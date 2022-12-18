@@ -11,4 +11,4 @@ class BaseService:
             response: Response = Response
     ):
         self.session: AsyncSession = session
-        self.response = Response
+        self.response = response

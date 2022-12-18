@@ -20,10 +20,7 @@ router = APIRouter(
 async def get_teachers(
         service: TeacherService = Depends(TeacherService)
 ):
-    teachers = await service.get_list()
-    return schemas.teachers.TeacherList(
-        teachers=teachers
-    )
+    return await service.get_list()
 
 
 @router.get(

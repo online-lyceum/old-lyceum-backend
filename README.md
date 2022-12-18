@@ -11,7 +11,7 @@
 
 ### Клонирование исходного кода
 ```shell
-git clone https://github.com/prostoLavr/async_lyceum_api.git
+git clone https://github.com/online-lyceum/TimeAPI.git
 ```
 ### Создание виртуального окружения
 ```shell
@@ -44,7 +44,7 @@ init_db
 # Инициализация создания таблиц (вызывается скрипт из этого проекта)
 init_models
 # Запуск gunicorn с uvicorn worker'ом. по адресу 127.0.0.1:8080
-gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
+gunicorn time_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:8080 
 ```
 ```shell
 #На Windows
@@ -52,7 +52,7 @@ gunicorn async_lyceum_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 127.
 docker run --rm -it -e POSTGRES_PASSWORD="password" -d -p "5432:5432" --name "postgres" postgres:15.1
 init_db
 init_models
-uvicorn async_lyceum_api.main:app
+uvicorn time_api.main:app
 ```
 
 ## Установка в docker образ
@@ -62,17 +62,19 @@ uvicorn async_lyceum_api.main:app
 
 ### Клонирование исходного кода
 ```shell
-git clone https://github.com/prostoLavr/async_lyceum_api.git
+git clone https://github.com/online-lyceum/TimeAPI.git
 ```
 Скорее всего вы хотите проверить работу API через свой браузер. Для этого 
 После изменений таблиц базы данных необходимо заново инициализировать создание
 таблиц в базе данных.
+Обратите внимание, что если в вашей системе доступен docker compose (без тире)
+лучше использовать его. docker-compose считается устаревшим:w
 ### Сборка пакета и запуск проекта
 ```shell
 # Сборка docker образа
-docker build -t async-lyceum-api .  # <- Точка в конце обязательна!
+docker build -t time_api .  # <- Точка в конце обязательна!
 # Запуск проекта на порту 8080
 docker-compose up -d -f docker-compose-dev.yml
 # Инициализация таблиц в базе данных
-docker-compose exec -d async_lyceum_api init_models
+docker-compose exec -d api init_models
 ```
