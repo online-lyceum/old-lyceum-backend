@@ -120,11 +120,11 @@ async def create_class(school_id: int, class_: forms.ClassWithoutID,
     if await db_manager.class_exist(session, school_id=school_id, **dict(class_)):
         response.status_code = 200
 
-    new_class, class_type = await db_manager.add_class(
-        session,
-        school_id=school_id,
-        **dict(class_)
-    )
+    new_class, class_type = await session.run_sync(db_manager.add_class,
+                                                   school_id=school_id,
+                                                   number=class_.number,
+                                                   letter=class_.letter,
+                                                   class_type=class_.class_type)
     return forms.Class(
         class_id=new_class.class_id,
         number=new_class.number,

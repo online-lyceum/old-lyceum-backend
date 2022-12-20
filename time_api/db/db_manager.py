@@ -160,13 +160,47 @@ async def _get_or_create_class_type_id(session: AsyncSession,
     return class_type_id
 
 
-async def add_class(session: AsyncSession, school_id: int, number: int,
+def _sync_get_or_create_class_type_id(session,
+                                      class_type_name: str):
+    class_type = session.query(db.ClassType)
+    class_type = class_type.filter_by(name=class_type_name).first()
+
+    if class_type_id := class_type.class_type_id is None:
+        class_type = db.ClassType(name=class_type_name)
+        session.add(class_type)
+        session.commit()
+        class_type_id = class_type.class_type_id
+    return class_type_id
+
+    """
+    query = select(db.ClassType.class_type_id)
+    query = query.filter_by(name=class_type_name)
+    class_type_id_tuple = session.execute(query).one_or_none()
+    if class_type_id_tuple is None:
+        class_type = db.ClassType(name=class_type_name)
+        session.add(class_type)
+        session.commit()
+        class_type_id = class_type.class_type_id
+    else:
+        class_type_id = class_type_id_tuple[0]
+    return class_type_id
+    """
+
+
+async def add_class(session, school_id: int, number: int,
                     letter: str, class_type: str = "класс"):
-    class_type_id = await _get_or_create_class_type_id(session, class_type)
-    query = select(db.Class).filter_by(
+    class_type_id = _sync_get_or_create_class_type_id(session, class_type)
+    _class = session.query(db.Class).filter_by(
         school_id=school_id, number=number,
         letter=letter, class_type_id=class_type_id
     )
+    if _class is None:
+        _class = db.Class(school_id=school_id, number=number,
+                          letter=letter, class_type_id=class_type_id)
+        session.add(_class)
+        session.commit()
+    return _class, class_type
+    """
     try:
         return (await session.execute(query)).one()[0], class_type
     except exc.NoResultFound:
@@ -175,6 +209,7 @@ async def add_class(session: AsyncSession, school_id: int, number: int,
         session.add(new_class)
         await session.commit()
         return new_class, class_type
+    """
 
 
 def create_subgroup(session, class_id: int, name: str):
