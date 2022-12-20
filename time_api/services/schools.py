@@ -61,3 +61,12 @@ class SchoolService(BaseService):
 
         return school
 
+    async def delete(
+            self,
+            school_id: int,
+    ):
+
+        school = await self.get(school_id=school_id)
+        await self.session.delete(school)
+        await self.session.commit()
+

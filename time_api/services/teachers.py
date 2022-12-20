@@ -48,3 +48,11 @@ class TeacherService(BaseService):
         self.session.add(new_teacher)
         await self.session.commit()
         return new_teacher
+
+    async def delete(
+            self,
+            teacher_id: int
+    ):
+        teacher = await self.get(teacher_id=teacher_id)
+        await self.session.delete(teacher)
+        await self.session.commit()

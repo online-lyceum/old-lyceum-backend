@@ -93,3 +93,11 @@ class SemesterService(BaseService):
         self.session.add(new_semester)
         await self.session.commit()
         return new_semester
+
+    async def delete(
+            self,
+            semester_id: int
+    ):
+        semester = await self.get(semester_id=semester_id)
+        await self.session.delete(semester)
+        await self.session.commit()

@@ -52,3 +52,14 @@ async def get_class(
         service: ClassService = Depends(ClassService)
 ):
     return await service.get(class_id=class_id)
+
+
+@router.delete(
+    '/{class_id}',
+    status_code=204
+)
+async def delete_class(
+    class_id: int,
+    service: ClassService = Depends(ClassService)
+):
+    return await service.delete(class_id=class_id)

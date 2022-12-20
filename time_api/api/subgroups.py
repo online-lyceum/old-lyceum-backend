@@ -53,3 +53,13 @@ async def get_subgroup(
 ):
     return await service.get(subgroup_id=subgroup_id)
 
+
+@router.delete(
+    '/{subgroup_id}',
+    status_code=204
+)
+async def delete_subgroup(
+        subgroup_id: int,
+        service: SubgroupService = Depends(SubgroupService)
+):
+    return await service.delete(subgroup_id=subgroup_id)

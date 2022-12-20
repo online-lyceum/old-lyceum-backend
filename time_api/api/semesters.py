@@ -60,3 +60,14 @@ async def create_semester(
         service: SemesterService = Depends(SemesterService)
 ):
     return await service.create(semester)
+
+
+@router.delete(
+    '/{semester_id}',
+    status_code=204
+)
+async def delete_semester(
+        semester_id: int,
+        service: SemesterService = Depends(SemesterService)
+):
+    return await service.delete(semester_id=semester_id)

@@ -8,7 +8,6 @@ from .base import BaseService
 from time_api import schemas
 from time_api.db import tables
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -67,3 +66,11 @@ class SubgroupService(BaseService):
             await self.session.rollback()
             new_subgroup = await self.get(subgroup_schema=subgroup_schema)
         return new_subgroup
+
+    async def delete(
+            self,
+            subgroup_id: int,
+    ):
+        subgroup = await self.get(subgroup_id=subgroup_id)
+        await self.session.delete(subgroup)
+        await self.session.commit()

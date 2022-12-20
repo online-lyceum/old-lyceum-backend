@@ -78,4 +78,3 @@ async def add_subgroup_to_lesson(
         service: LessonService = Depends(LessonService)
 ):
     return await service.add_subgroup_to_lesson(subgroup_lesson=subgroup_lesson)
-

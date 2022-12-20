@@ -50,3 +50,15 @@ async def create_teacher(
         service: TeacherService = Depends(TeacherService)
 ):
     return await service.create(teacher)
+
+
+@router.delete(
+    '/{teacher_id}',
+    status_code=204
+)
+async def delete_teacher(
+        teacher_id: int,
+        service: TeacherService = Depends(TeacherService)
+):
+    return await service.delete(teacher_id=teacher_id)
+

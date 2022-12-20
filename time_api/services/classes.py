@@ -86,3 +86,12 @@ class ClassService(BaseService):
             )
 
         return new_class
+
+    async def delete(
+            self,
+            class_id: int,
+    ):
+
+        _class = await self.get(class_id=class_id)
+        await self.session.delete(_class)
+        await self.session.commit()

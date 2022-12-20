@@ -50,3 +50,14 @@ async def get_school(
         service: SchoolService = Depends(SchoolService)
 ):
     return await service.get(school_id=school_id)
+
+
+@router.delete(
+    '/{school_id}',
+    status_code=204
+)
+async def delete_school(
+    school_id: int,
+    service: SchoolService = Depends(SchoolService)
+):
+    return await service.delete(school_id=school_id)
