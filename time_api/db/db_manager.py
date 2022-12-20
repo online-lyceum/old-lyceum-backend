@@ -4,7 +4,6 @@ import asyncio
 import sqlalchemy.engine
 
 from time_api import db
-from time_api.db import my_exc
 from time_api.db.base import init_models
 
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncResult
@@ -16,24 +15,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def run_init_models():
-    asyncio.run(init_models())
-    print("Done")
-
-
 async def get_school_list(session: AsyncSession):
-    query = select(db.School.school_id, db.School.name,
-                   db.Address.city, db.Address.place)
-    query = query.select_from(db.School)
-    query = query.join(db.Address)
-
-    return await session.stream(query)
+    query = select(db.School)
+    return await session.scalars(query)
 
 
 async def get_cities(session: AsyncSession):
     query = select(db.Address.city).distinct()
     return await session.stream(query)
-
 
 
 class LessonList:
@@ -61,18 +50,15 @@ class LessonList:
     async def get_current_or_next_day_with_lessons(self
         ) -> tuple[int, list[sqlalchemy.engine.Row]]:
         if await self._has_today_lessons():
-            logger.debug('Has lessons today')
-            lessons = await self._get_day_lesson_rows(datetime.today().weekday())
+            lessons = await self._get_day_lesson_and_teacher_rows(datetime.today().weekday())
             return (
                 datetime.today().weekday(),
                 lessons
             )
         else:
-            logger.debug('Has not lessons today')
             for i in range(1, 8):
                 weekday = (datetime.today().weekday() + i) % 7
-                lessons = await self._get_day_lesson_rows(weekday)
-                logger.debug(f'Lessons on {weekday=} is {lessons}')
+                lessons = await self._get_day_lesson_and_teacher_rows(weekday)
                 if lessons:
                     break
             else:
@@ -96,7 +82,7 @@ class LessonList:
         query = query.filter(db.Lesson.week == week)
         return await self.session.stream(query)
 
-    async def _get_day_lesson_rows(
+    async def _get_day_lesson_and_teacher_rows(
             self,
             weekday: int,
             week: int = 0) -> list[sqlalchemy.engine.Row]:
@@ -105,7 +91,7 @@ class LessonList:
 
     async def _has_today_lessons(self):
         today = datetime.today()
-        lessons = await self._get_day_lesson_rows(today.weekday())
+        lessons = await self._get_day_lesson_and_teacher_rows(today.weekday())
         logger.debug(f'Today has {lessons=}')
         if not lessons:
             return False
@@ -137,14 +123,6 @@ async def add_school_with_address(session: AsyncSession, name: str,
         await session.commit()
         return new_school, address
 
-
-async def get_classes(session: AsyncSession, school_id: int):
-    query = select(db.Class.class_id, db.Class.number, db.Class.letter,
-                   db.ClassType.name)
-    query = query.join(db.ClassType).join(db.School)
-    query = query.filter(db.School.school_id == school_id)
-    result = await session.stream(query)
-    return result
 
 
 async def _get_or_create_class_type_id(session: AsyncSession,

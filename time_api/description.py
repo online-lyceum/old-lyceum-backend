@@ -4,5 +4,5 @@ with open('./time_api/description.md', encoding='utf-8') as file:
 application_metadata = {
     "title": "Асинхронное API расписания для проекта Лицей в Цифре",
     "description": description,
-    "version": "0.0.3.dev1",
+    "version": "0.0.4.dev1",
 }
