@@ -8,7 +8,7 @@ class BaseSemester(BaseModel):
     school_id: int
     start_date: Date
     end_date: Date
-    week_reverse: bool
+    week_reverse: Optional[bool] = None
 
 
 class SemesterCreate(BaseSemester):
