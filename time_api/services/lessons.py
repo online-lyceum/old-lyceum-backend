@@ -118,8 +118,7 @@ class LessonService(BaseService):
         lessons = await self._get_list(class_id=class_id,
                                        subgroup_id=subgroup_id,
                                        weekday=today.weekday())
-        for i in range(len(lessons)):
-            lessons[i] = schemas.lessons.InternalLesson.from_orm(lessons[i]).dict()
+        lessons = [await self._add_teacher(lesson) for lesson in lessons]
         logger.debug(f'Today has {lessons=}')
         returned_lessons: list[Lesson] = []
         for lesson in lessons:
@@ -132,7 +131,9 @@ class LessonService(BaseService):
                 room=lesson['room'],
                 school_id=lesson['school_id'],
                 lesson_id=lesson['lesson_id'],
-                teacher=schemas.teachers.Teacher(name='asd', teacher_id=1)
+                teacher=schemas.teachers.Teacher(
+                    **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
+                )
             )
             returned_lessons.append(schemas_lesson)
 
