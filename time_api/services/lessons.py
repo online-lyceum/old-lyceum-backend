@@ -12,7 +12,6 @@ from time_api.schemas.lessons import DayLessonList
 from time_api import schemas
 from time_api.services.teachers import TeacherService
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -76,36 +75,70 @@ class LessonService(BaseService):
             )
 
         if week is not None:
-            query = query.filter_by(
-                week=week
+            query = query.filter(
+                tables.Lesson.week == week
             )
 
         if weekday is not None:
-            query = query.filter_by(
-                weekday=weekday
+            query = query.filter(
+                tables.Lesson.weekday == weekday
             )
+
+        query = query.order_by(tables.Lesson.start_time)
 
         lessons = list(await self.session.scalars(query))
         if not lessons:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         return lessons
-
+    '''
     async def get_today_list(
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
     ) -> DayLessonList:
         today = dt.datetime.today()
-        lessons = await self._get_list(today.weekday())
+        lessons = await self._get_list(class_id=class_id,
+                                       subgroup_id=subgroup_id,
+                                       weekday=today.weekday())
         logger.debug(f'Today has {lessons=}')
-        if not lessons:
-            return False
-        day_end_time = time(0, 0)
-        for lesson, teacher in lessons:
-            lesson_end_time = time(lesson.end_time.hour, lesson.end_time.minute)
-            day_end_time = max(lesson_end_time, day_end_time)
-        return day_end_time < datetime.now().time()
+        return DayLessonList(
+            lessons=lessons,
+            is_today=True,
+            weekday=today.weekday(),
+            week=0
+        )'''
+
+    async def get_today_list(
+            self,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ) -> schemas.lessons.LessonList:
+        today = dt.datetime.today()
+        lessons = await self._get_list(class_id=class_id,
+                                       subgroup_id=subgroup_id,
+                                       weekday=today.weekday())
+        for i in range(len(lessons)):
+            lessons[i] = schemas.lessons.InternalLesson.from_orm(lessons[i]).dict()
+        logger.debug(f'Today has {lessons=}')
+        returned_lessons: list[Lesson] = []
+        for lesson in lessons:
+            schemas_lesson = Lesson(
+                name=lesson['name'],
+                start_time=dt.time(**lesson['start_time']),
+                end_time=dt.time(**lesson['end_time']),
+                week=lesson['week'],
+                weekday=today.weekday(),
+                room=lesson['room'],
+                school_id=lesson['school_id'],
+                lesson_id=lesson['lesson_id'],
+                teacher=schemas.teachers.Teacher(name='asd', teacher_id=1)
+            )
+            returned_lessons.append(schemas_lesson)
+
+        return schemas.lessons.LessonList(
+            lessons=returned_lessons
+        )
 
     async def get(
             self, *,
