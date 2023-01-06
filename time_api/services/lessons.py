@@ -7,7 +7,7 @@ from fastapi import status, HTTPException
 
 from .base import BaseService
 from time_api.db import tables
-from time_api.schemas.lessons import LessonCreate, Lesson, InternalLesson
+from time_api.schemas.lessons import LessonCreate, Lesson
 from time_api.schemas.lessons import DayLessonList
 from time_api import schemas
 from time_api.services.teachers import TeacherService
@@ -91,33 +91,16 @@ class LessonService(BaseService):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         return lessons
-    '''
-    async def get_today_list(
-            self,
-            class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None
-    ) -> DayLessonList:
-        today = dt.datetime.today()
-        lessons = await self._get_list(class_id=class_id,
-                                       subgroup_id=subgroup_id,
-                                       weekday=today.weekday())
-        logger.debug(f'Today has {lessons=}')
-        return DayLessonList(
-            lessons=lessons,
-            is_today=True,
-            weekday=today.weekday(),
-            week=0
-        )'''
 
-    async def get_today_list(
+    async def get_weekday_list(
             self,
+            weekday: Optional[int] = None,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
-        today = dt.datetime.today()
         lessons = await self._get_list(class_id=class_id,
                                        subgroup_id=subgroup_id,
-                                       weekday=today.weekday())
+                                       weekday=weekday)
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
         logger.debug(f'Today has {lessons=}')
         returned_lessons: list[Lesson] = []
@@ -127,7 +110,7 @@ class LessonService(BaseService):
                 start_time=dt.time(**lesson['start_time']),
                 end_time=dt.time(**lesson['end_time']),
                 week=lesson['week'],
-                weekday=today.weekday(),
+                weekday=lesson['weekday'],
                 room=lesson['room'],
                 school_id=lesson['school_id'],
                 lesson_id=lesson['lesson_id'],
@@ -140,6 +123,42 @@ class LessonService(BaseService):
         return schemas.lessons.LessonList(
             lessons=returned_lessons
         )
+
+    async def get_today_list(
+            self,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ) -> schemas.lessons.LessonList:
+        today = dt.datetime.today().weekday()
+        return await self.get_weekday_list(weekday=today,
+                                           class_id=class_id,
+                                           subgroup_id=subgroup_id)
+
+    async def _today_is_done(self,
+                             class_id: int,
+                             subgroup_id: int) -> bool:
+        try:
+            lessons = await self.get_today_list(
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            lessons_end_time = dt.time(**(lessons[-1]['end_time']))
+            if lessons_end_time <= dt.datetime.now().time():
+                return True
+
+        except HTTPException(status_code=404):
+            return True
+
+        return False
+
+    async def get_nearest_weekday_list(self,
+                                       class_id: int,
+                                       subgroup_id: int) -> schemas.lessons.LessonList:
+        if self._today_is_done(class_id=class_id,
+                            subgroup_id=subgroup_id):
+
+
+
 
     async def get(
             self, *,
