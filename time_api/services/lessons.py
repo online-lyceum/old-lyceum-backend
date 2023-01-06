@@ -153,12 +153,10 @@ class LessonService(BaseService):
 
     async def get_nearest_weekday_list(self,
                                        class_id: int,
-                                       subgroup_id: int) -> schemas.lessons.LessonList:
+                                       subgroup_id: int):
         if self._today_is_done(class_id=class_id,
-                            subgroup_id=subgroup_id):
-
-
-
+                               subgroup_id=subgroup_id):
+            return True
 
     async def get(
             self, *,
