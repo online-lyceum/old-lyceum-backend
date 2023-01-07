@@ -151,13 +151,6 @@ class LessonService(BaseService):
 
         return False
 
-    async def get_nearest_weekday_list(self,
-                                       class_id: int,
-                                       subgroup_id: int):
-        if self._today_is_done(class_id=class_id,
-                               subgroup_id=subgroup_id):
-            return True
-
     async def get(
             self, *,
             lesson_schema: LessonCreate
@@ -206,3 +199,20 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
+
+    async def get_nearest_weekday_list(
+            self,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ) -> schemas.lessons.LessonList:
+        weekday = dt.datetime.today().weekday()
+        async for day in range(weekday, 7):
+            near = await self.get_weekday_list(weekday=day, class_id=class_id, subgroup_id=subgroup_id)
+            if len(near) != 0:
+                return near
+        async for day in range(weekday):
+            near = await self.get_weekday_list(weekday=day, class_id=class_id, subgroup_id=subgroup_id)
+            if len(near) != 0:
+                return near
+        return []
+
