@@ -2,22 +2,11 @@ from sqlalchemy import Column
 from sqlalchemy import String
 from sqlalchemy import Integer
 from sqlalchemy import Time
+from sqlalchemy import Boolean
 from sqlalchemy import ForeignKey
 from sqlalchemy import UniqueConstraint
+from sqlalchemy import Date
 from time_api.db.base import Base
-
-
-class Address(Base):
-    __tablename__ = "addresses"
-
-    address_id = Column(Integer, autoincrement=True, primary_key=True,
-                        index=True)
-    city = Column(String)
-    place = Column(String)
-
-    __table_args__ = (
-        UniqueConstraint('city', 'place', name='uq_city_place'),
-    )
 
 
 class School(Base):
@@ -25,20 +14,13 @@ class School(Base):
 
     school_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
-    name = Column(String)
-    address_id = Column(ForeignKey('addresses.address_id'))
+    name = Column(String, nullable=False)
+    address = Column(String, nullable=False)
+    is_university = Column(Boolean)
 
     __table_args__ = (
-        UniqueConstraint('name', 'address_id', name='uq_name_address'),
+        UniqueConstraint('name', 'address', name='uq_name_address'),
     )
-
-
-class ClassType(Base):
-    """Тип класса - курс, класс, группа и т.д."""
-    __tablename__ = "class_types"
-    class_type_id = Column(Integer, autoincrement=True, primary_key=True,
-                           index=True)
-    name = Column(String, unique=True)
 
 
 class Class(Base):
@@ -49,11 +31,9 @@ class Class(Base):
     school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'))
     number = Column(Integer)
     letter = Column(String)
-    class_type_id = Column(ForeignKey('class_types.class_type_id'))
 
     __table_args__ = (
-        UniqueConstraint('school_id', 'number', 'letter', 'class_type_id',
-                         name='uq_class_constraint'),
+        UniqueConstraint('school_id', 'number', 'letter'),
     )
 
 
@@ -84,13 +64,28 @@ class Lesson(Base):
 
     lesson_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
-    name = Column(String)
-    start_time = Column(Time)
-    end_time = Column(Time)
+    name = Column(String, nullable=False)
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
     week = Column(Integer)
-    weekday = Column(Integer)
-    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'))
-    school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'))
+    weekday = Column(Integer, nullable=False)
+    room = Column(String, nullable=False)
+    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
+                        nullable=False)
+    school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'),
+                       nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'name',
+            'start_time',
+            'end_time',
+            'weekday',
+            'room',
+            'school_id',
+            'teacher_id'
+        ),
+    )
 
 
 class LessonSubgroup(Base):
@@ -104,4 +99,25 @@ class LessonSubgroup(Base):
     subgroup_id = Column(
         ForeignKey('subgroups.subgroup_id', ondelete='RESTRICT'),
         primary_key=True
+    )
+
+
+class Semester(Base):
+    """Время от каникул до каникул.
+    week_reverse - отвечает за порядок недель.
+    Неделя верхняя если (week_num + week_reverse) % 2 == 0"""
+    __tablename__ = "semesters"
+    semester_id = Column(Integer, autoincrement=True, primary_key=True,
+                         index=True)
+    school_id = Column(ForeignKey('schools.school_id'), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
+    week_reverse = Column(Boolean, nullable=True, default=None)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'school_id',
+            'start_date',
+            'end_date'
+        ),
     )
