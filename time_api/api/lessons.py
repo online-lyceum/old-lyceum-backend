@@ -44,6 +44,23 @@ async def get_today_lessons(
     )
 
 
+@router.get(
+    '/weekday',
+    response_model=schemas.lessons.LessonList
+)
+async def get_weekday_lessons(
+        weekday: Optional[int] = None,
+        subgroup_id: Optional[int] = None,
+        class_id: Optional[int] = None,
+        service: LessonService = Depends(LessonService)
+):
+    return await service.get_weekday_list(
+        weekday=weekday,
+        class_id=class_id,
+        subgroup_id=subgroup_id
+    )
+
+
 @router.post(
     '',
     response_model=schemas.lessons.Lesson,
