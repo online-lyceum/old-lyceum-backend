@@ -63,7 +63,7 @@ async def get_weekday_lessons(
 
 @router.get(
     '/nearest_day',
-    response_model=schemas.lessons.LessonList
+    response_model=schemas.lessons.LessonListWithWeekday
 )
 async def get_weekday_lessons(
         subgroup_id: Optional[int] = None,
