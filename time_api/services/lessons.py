@@ -136,34 +136,15 @@ class LessonService(BaseService):
 
     async def get_weekday_list_with_weekday(
             self,
-            weekday: Optional[int] = None,
+            weekday: int,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
     ) -> schemas.lessons.LessonListWithWeekday:
-        lessons = await self._get_list(class_id=class_id,
-                                       subgroup_id=subgroup_id,
-                                       weekday=weekday)
-        lessons = [await self._add_teacher(lesson) for lesson in lessons]
-        logger.debug(f'Today has {lessons=}')
-        returned_lessons: list[Lesson] = []
-        for lesson in lessons:
-            schemas_lesson = Lesson(
-                name=lesson['name'],
-                start_time=dt.time(**lesson['start_time']),
-                end_time=dt.time(**lesson['end_time']),
-                week=lesson['week'],
-                weekday=lesson['weekday'],
-                room=lesson['room'],
-                school_id=lesson['school_id'],
-                lesson_id=lesson['lesson_id'],
-                teacher=schemas.teachers.Teacher(
-                    **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
-                )
-            )
-            returned_lessons.append(schemas_lesson)
-
+        lessons = await self.get_weekday_list(class_id=class_id,
+                                              subgroup_id=subgroup_id,
+                                              weekday=weekday)
         return schemas.lessons.LessonListWithWeekday(
-            lessons=returned_lessons,
+            lessons=lessons,
             weekday=weekday
         )
 
@@ -171,17 +152,26 @@ class LessonService(BaseService):
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
-    ) -> schemas.lessons.LessonListWithWeekday:
+    ):
         weekday = dt.datetime.today().weekday()
         for day in range(weekday, 7):
-            near = await self.get_weekday_list_with_weekday(weekday=day, class_id=class_id, subgroup_id=subgroup_id)
-            if len(near.lessons) != 0:
+            near = await self.get_weekday_list_with_weekday(
+                weekday=day,
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            if near.lessons:
                 return near
+
         for day in range(0, weekday):
-            near = await self.get_weekday_list_with_weekday(weekday=day, class_id=class_id, subgroup_id=subgroup_id)
-            if len(near.lessons) != 0:
+            near = await self.get_weekday_list_with_weekday(
+                weekday=day,
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            if near.lessons:
                 return near
-        return await self.get_weekday_list_with_weekday(weekday=6, class_id=class_id, subgroup_id=subgroup_id)
+        return []
 
     async def _today_is_done(self,
                              class_id: int,
