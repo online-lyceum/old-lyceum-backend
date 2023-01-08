@@ -173,23 +173,6 @@ class LessonService(BaseService):
                 return near
         return []
 
-    async def _today_is_done(self,
-                             class_id: int,
-                             subgroup_id: int) -> bool:
-        try:
-            lessons = await self.get_today_list(
-                class_id=class_id,
-                subgroup_id=subgroup_id
-            )
-            lessons_end_time = dt.time(**(lessons[-1]['end_time']))
-            if lessons_end_time <= dt.datetime.now().time():
-                return True
-
-        except HTTPException(status_code=404):
-            return True
-
-        return False
-
     async def get(
             self, *,
             lesson_schema: LessonCreate
