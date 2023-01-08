@@ -171,7 +171,7 @@ class LessonService(BaseService):
             )
             if near.lessons:
                 return near
-        return []
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get(
             self, *,
