@@ -181,7 +181,7 @@ class LessonService(BaseService):
             near = await self.get_weekday_list_with_weekday(weekday=day, class_id=class_id, subgroup_id=subgroup_id)
             if len(near.lessons) != 0:
                 return near
-        return await self.get_weekday_list_with_weekday(weekday=0, class_id=class_id, subgroup_id=subgroup_id)
+        return await self.get_weekday_list_with_weekday(weekday=6, class_id=class_id, subgroup_id=subgroup_id)
 
     async def _today_is_done(self,
                              class_id: int,
