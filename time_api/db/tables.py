@@ -67,7 +67,7 @@ class Lesson(Base):
     name = Column(String, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    is_odd_week = Column(Integer)
+    is_odd_week = Column(Boolean, nullable=False)
     weekday = Column(Integer, nullable=False)
     room = Column(String, nullable=False)
     teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
@@ -95,11 +95,11 @@ class LessonSubgroup(Base):
     И какие подгруппы будут на уроке."""
     __tablename__ = "lesson_subgroups"
     lesson_id = Column(
-        ForeignKey('lessons.lesson_id', ondelete='RESTRICT'),
+        ForeignKey('lessons.lesson_id', ondelete='CASCADE'),
         primary_key=True
     )
     subgroup_id = Column(
-        ForeignKey('subgroups.subgroup_id', ondelete='RESTRICT'),
+        ForeignKey('subgroups.subgroup_id', ondelete='CASCADE'),
         primary_key=True
     )
 

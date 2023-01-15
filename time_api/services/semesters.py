@@ -5,7 +5,6 @@ from typing import Optional
 from sqlalchemy import select
 from fastapi import status, HTTPException, Depends
 
-import time_api.services.semesters
 from .base import BaseService
 from time_api.db import tables
 from time_api import schemas
@@ -15,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class SemesterService(BaseService):
+
     async def get_list(
             self
     ) -> schemas.semesters.SemesterList:
@@ -67,7 +67,7 @@ class SemesterService(BaseService):
 
         return schemas.semesters.CurrentSemester(
             semester=semester,
-            week=week
+            is_odd_week=week
         )
 
     async def get(

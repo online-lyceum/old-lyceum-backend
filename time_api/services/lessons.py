@@ -3,16 +3,33 @@ import datetime as dt
 from typing import Optional, Any
 
 from sqlalchemy import select, exc
-from fastapi import status, HTTPException
+from fastapi import status, HTTPException, Depends
 
+from time_api.services.semesters import SemesterService
 from .base import BaseService
 from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
-from time_api.schemas.lessons import DayLessonList
 from time_api import schemas
 from time_api.services.teachers import TeacherService
 
 logger = logging.getLogger(__name__)
+
+
+def _dict_to_schemas_lessons(lesson: dict):
+    return Lesson(
+        name=lesson['name'],
+        start_time=dt.time(**lesson['start_time']),
+        end_time=dt.time(**lesson['end_time']),
+        week=lesson['is_odd_week'],
+        weekday=lesson['weekday'],
+        room=lesson['room'],
+        school_id=lesson['school_id'],
+        lesson_id=lesson['lesson_id'],
+        teacher=schemas.teachers.Teacher(
+            **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
+        ),
+        semester_id=lesson['semester_id']
+    )
 
 
 class LessonService(BaseService):
@@ -89,7 +106,7 @@ class LessonService(BaseService):
 
         if semester_id is not None:
             query = query.filter(
-                tables.Semester.semester_id == semester_id
+                tables.Lesson.semester_id == semester_id
             )
 
         query = query.order_by(tables.Lesson.start_time)
@@ -102,59 +119,90 @@ class LessonService(BaseService):
 
     async def get_weekday_list(
             self,
-            weekday: Optional[int] = None,
+            weekday: int,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
-            semester_id: Optional[int] = None
+            is_odd_week: Optional[bool] = None,
+            semester_service: SemesterService = Depends(SemesterService)
     ) -> schemas.lessons.LessonList:
-        lessons = await self._get_list(class_id=class_id,
-                                       subgroup_id=subgroup_id,
-                                       weekday=weekday,
-                                       semester_id=semester_id)
+        semester = await semester_service.get_current()
+
+        if is_odd_week is None:
+            is_odd_week = semester.is_odd_week
+
+        lessons = await self._get_list(
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            weekday=weekday,
+            semester_id=semester.semester.semester_id,
+            is_odd_week=is_odd_week
+        )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
         logger.debug(f'Today has {lessons=}')
-        returned_lessons: list[Lesson] = []
-        for lesson in lessons:
-            schemas_lesson = Lesson(
-                name=lesson['name'],
-                start_time=dt.time(**lesson['start_time']),
-                end_time=dt.time(**lesson['end_time']),
-                week=lesson['is_odd_week'],
-                weekday=lesson['weekday'],
-                room=lesson['room'],
-                school_id=lesson['school_id'],
-                lesson_id=lesson['lesson_id'],
-                teacher=schemas.teachers.Teacher(
-                    **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
-                ),
-                semester_id=lesson['semester_id']
-            )
-            returned_lessons.append(schemas_lesson)
 
         return schemas.lessons.LessonList(
-            lessons=returned_lessons
+            lessons=lessons
         )
 
     async def get_today_list(
             self,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None
+            subgroup_id: Optional[int] = None,
+            semester_service: SemesterService = Depends(SemesterService)
     ) -> schemas.lessons.LessonList:
         today = dt.datetime.today().weekday()
-        return await self.get_weekday_list(weekday=today,
-                                           class_id=class_id,
-                                           subgroup_id=subgroup_id)
+        return await self.get_weekday_list(
+            weekday=today,
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            semester_service=semester_service
+        )
+
+    async def _get_nearest_weekday_list(
+            self,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None,
+            semester_service: SemesterService = Depends(SemesterService)
+    ):
+        current_semester = await semester_service.get_current()
+        current_semester = current_semester.semester
+
+        today_weekday = dt.datetime.today().weekday()
+
+        is_odd_week = await semester_service._get_week(
+            start_date=dt.date(
+                current_semester.start_date.year,
+                current_semester.start_date.month,
+                current_semester.start_date.day),
+            week_reverse=current_semester.week_reverse
+        )
+
+        # TODO: Logic
+
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get_nearest_weekday_list(
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
+            semester_service: SemesterService = Depends(SemesterService)
     ):
-        lessons = await self._get_list(class_id=class_id,
-                                       subgroup_id=subgroup_id)
+        lessons = await self._get_nearest_weekday_list(
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            semester_service=semester_service
+        )
 
+        lessons = [await self._add_teacher(lesson) for lesson in lessons]
+        logger.debug(f'Today has {lessons=}')
+        returned_lessons: list[Lesson] = []
+        for lesson in lessons:
+            lesson = _dict_to_schemas_lessons(lesson)
+            returned_lessons.append(lesson)
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return schemas.lessons.LessonList(
+            lessons=returned_lessons
+        )
 
     async def get(
             self, *,
@@ -167,8 +215,8 @@ class LessonService(BaseService):
             end_time=dt.time(**lesson_schema.end_time.dict()),
             weekday=lesson_schema.weekday,
             school_id=lesson_schema.school_id,
-            teacher_id=lesson_schema.teacher_id
-
+            teacher_id=lesson_schema.teacher_id,
+            semester_id=lesson_schema.semester_id
         )
         lesson = await self.session.scalar(query)
         if lesson is None:
@@ -188,6 +236,11 @@ class LessonService(BaseService):
             new_lesson = await self.get(lesson_schema=lesson_schema)
             self.response.status_code = status.HTTP_200_OK
         return await self._add_teacher(new_lesson)
+
+    async def delete(self,
+                     lesson_id: int):
+        # TODO: Logic
+        return None
 
     async def add_subgroup_to_lesson(
             self,
