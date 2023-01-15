@@ -3,8 +3,9 @@ import datetime as dt
 from typing import Optional
 
 from sqlalchemy import select
-from fastapi import status, HTTPException
+from fastapi import status, HTTPException, Depends
 
+import time_api.services.semesters
 from .base import BaseService
 from time_api.db import tables
 from time_api import schemas
@@ -36,12 +37,15 @@ class SemesterService(BaseService):
             dt.date,
             week_reverse: bool
     ) -> bool:
-        days = (dt.date.today() - start_date).days
-        week = (days % 7 + week_reverse) % 2
-        return bool(week)
+        start_week = start_date.isocalendar()[1]
+        week_number = dt.date.today().isocalendar()[1] - 1
+        delta_week = week_number - start_week
+
+        is_odd_week = (delta_week % 7 + week_reverse) % 2 == 1
+        return is_odd_week
 
     async def get_current(
-            self
+            self,
     ) -> schemas.semesters.CurrentSemester:
 
         query = select(tables.Semester).filter(
