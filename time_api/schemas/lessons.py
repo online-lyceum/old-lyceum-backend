@@ -35,6 +35,11 @@ class LessonList(BaseModel):
     lessons: list[Lesson]
 
 
+class LessonListWithWeekday(BaseModel):
+    lessons: list[Lesson]
+    weekday: int
+
+
 class DayLessonList(LessonList):
     is_today: bool
     weekday: Optional[int]

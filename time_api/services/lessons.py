@@ -5,10 +5,9 @@ from typing import Optional, Any
 from sqlalchemy import select, exc
 from fastapi import status, HTTPException
 
-from .base import BaseService
+from time_api.services.base import BaseService
 from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
-from time_api.schemas.lessons import DayLessonList
 from time_api import schemas
 from time_api.services.teachers import TeacherService
 
@@ -134,29 +133,44 @@ class LessonService(BaseService):
                                            class_id=class_id,
                                            subgroup_id=subgroup_id)
 
-    async def _today_is_done(self,
-                             class_id: int,
-                             subgroup_id: int) -> bool:
-        try:
-            lessons = await self.get_today_list(
+    async def get_weekday_list_with_weekday(
+            self,
+            weekday: int,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ) -> schemas.lessons.LessonListWithWeekday:
+        lessons = await self.get_weekday_list(class_id=class_id,
+                                              subgroup_id=subgroup_id,
+                                              weekday=weekday)
+        return schemas.lessons.LessonListWithWeekday(
+            lessons=lessons.lessons,
+            weekday=weekday
+        )
+
+    async def get_nearest_weekday_list(
+            self,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ):
+        weekday = dt.datetime.today().weekday()
+        for day in range(weekday, 7):
+            near = await self.get_weekday_list_with_weekday(
+                weekday=day,
                 class_id=class_id,
                 subgroup_id=subgroup_id
             )
-            lessons_end_time = dt.time(**(lessons[-1]['end_time']))
-            if lessons_end_time <= dt.datetime.now().time():
-                return True
+            if near.lessons:
+                return near
 
-        except HTTPException(status_code=404):
-            return True
-
-        return False
-
-    async def get_nearest_weekday_list(self,
-                                       class_id: int,
-                                       subgroup_id: int):
-        if self._today_is_done(class_id=class_id,
-                               subgroup_id=subgroup_id):
-            return True
+        for day in range(0, weekday):
+            near = await self.get_weekday_list_with_weekday(
+                weekday=day,
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            if near.lessons:
+                return near
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get(
             self, *,
