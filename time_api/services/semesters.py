@@ -41,7 +41,7 @@ class SemesterService(BaseService):
         week_number = dt.date.today().isocalendar()[1] - 1
         delta_week = week_number - start_week
 
-        is_odd_week = (delta_week % 7 + week_reverse) % 2 == 1
+        is_odd_week = (delta_week + week_reverse) % 2 == 1
         return is_odd_week
 
     async def get_current(
