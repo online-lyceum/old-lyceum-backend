@@ -5,10 +5,9 @@ from typing import Optional, Any
 from sqlalchemy import select, exc
 from fastapi import status, HTTPException
 
-from .base import BaseService
+from time_api.services.base import BaseService
 from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
-from time_api.schemas.lessons import DayLessonList
 from time_api import schemas
 from time_api.services.teachers import TeacherService
 
@@ -144,7 +143,7 @@ class LessonService(BaseService):
                                               subgroup_id=subgroup_id,
                                               weekday=weekday)
         return schemas.lessons.LessonListWithWeekday(
-            lessons=lessons,
+            lessons=lessons.lessons,
             weekday=weekday
         )
 
@@ -221,6 +220,3 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
-
-
-
