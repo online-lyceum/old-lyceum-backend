@@ -27,5 +27,5 @@ class SemesterList(BaseModel):
 
 
 class CurrentSemester(BaseModel):
-    week: Optional[bool]
+    is_odd_week: Optional[bool]
     semester: Semester

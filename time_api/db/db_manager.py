@@ -67,7 +67,7 @@ class LessonList:
 
     async def _get_day_lesson_steam(self, weekday: int, week: int = 0) -> AsyncResult:
         if week != 0:
-            raise NotImplementedError("Double week support did not implemented")
+            raise NotImplementedError("Double is_odd_week support did not implemented")
         query = select(db.Lesson, db.Teacher)
         query = query.select_from(db.Lesson)
         query = query.join(db.LessonSubgroup)
@@ -79,7 +79,7 @@ class LessonList:
             query = query.join(db.Class)
             query = query.filter(db.Class.class_id == self.class_id)
         query = query.filter(db.Lesson.weekday == weekday)
-        query = query.filter(db.Lesson.week == week)
+        query = query.filter(db.Lesson.is_odd_week == week)
         return await self.session.stream(query)
 
     async def _get_day_lesson_and_teacher_rows(

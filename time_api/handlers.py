@@ -37,7 +37,7 @@ def _transform_db_lesson_to_lesson_form(lesson: db_manager.db.Lesson,
                 hour=lesson.end_time.hour,
                 minute=lesson.end_time.minute
             ),
-            week=lesson.week,
+            week=lesson.is_odd_week,
             weekday=lesson.weekday,
             teacher=forms.Teacher(
                 teacher_id=teacher.teacher_id,
@@ -79,13 +79,13 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutIDWithTeacher
                         response: Response = Response):
     if await db_manager.lesson_exist(session, school_id,
                                      lesson.name, dict(lesson.start_time),
-                                     dict(lesson.end_time), lesson.week,
+                                     dict(lesson.end_time), lesson.is_odd_week,
                                      lesson.weekday, lesson.teacher_id):
         response.status_code = 200
     lesson, teacher = await db_manager.create_lesson_and_get_teacher(
         session, school_id=school_id,
         name=lesson.name, start_time=dict(lesson.start_time),
-        end_time=dict(lesson.end_time), week=lesson.week,
+        end_time=dict(lesson.end_time), week=lesson.is_odd_week,
         weekday=lesson.weekday, teacher_id=lesson.teacher_id
     )
     return forms.Lesson(
@@ -96,7 +96,7 @@ async def create_lesson(school_id: int, lesson: forms.LessonWithoutIDWithTeacher
                               minute=lesson.start_time.minute),
         end_time=forms.Time(hour=lesson.end_time.hour,
                             minute=lesson.end_time.minute),
-        week=lesson.week,
+        week=lesson.is_odd_week,
         weekday=lesson.weekday,
         teacher=forms.Teacher(
             name=teacher.name,

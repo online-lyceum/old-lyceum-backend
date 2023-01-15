@@ -22,13 +22,15 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int] = None
+            weekday: Optional[int] = None,
+            semester_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         lessons = await self._get_list(
-                class_id=class_id,
-                subgroup_id=subgroup_id,
-                week=week,
-                weekday=weekday
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            is_odd_week=week,
+            weekday=weekday,
+            semester_id=semester_id
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
         return schemas.lessons.LessonList(
@@ -54,8 +56,9 @@ class LessonService(BaseService):
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
-            week: Optional[bool] = None,
-            weekday: Optional[int] = None
+            is_odd_week: Optional[bool] = None,
+            weekday: Optional[int] = None,
+            semester_id: Optional[int] = None
     ) -> list[tables.Class]:
 
         query = select(tables.Lesson)
@@ -74,14 +77,19 @@ class LessonService(BaseService):
                 class_id=class_id
             )
 
-        if week is not None:
+        if is_odd_week is not None:
             query = query.filter(
-                tables.Lesson.week == week
+                tables.Lesson.is_odd_week == is_odd_week
             )
 
         if weekday is not None:
             query = query.filter(
                 tables.Lesson.weekday == weekday
+            )
+
+        if semester_id is not None:
+            query = query.filter(
+                tables.Semester.semester_id == semester_id
             )
 
         query = query.order_by(tables.Lesson.start_time)
@@ -96,11 +104,13 @@ class LessonService(BaseService):
             self,
             weekday: Optional[int] = None,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None
+            subgroup_id: Optional[int] = None,
+            semester_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         lessons = await self._get_list(class_id=class_id,
                                        subgroup_id=subgroup_id,
-                                       weekday=weekday)
+                                       weekday=weekday,
+                                       semester_id=semester_id)
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
         logger.debug(f'Today has {lessons=}')
         returned_lessons: list[Lesson] = []
@@ -109,14 +119,15 @@ class LessonService(BaseService):
                 name=lesson['name'],
                 start_time=dt.time(**lesson['start_time']),
                 end_time=dt.time(**lesson['end_time']),
-                week=lesson['week'],
+                week=lesson['is_odd_week'],
                 weekday=lesson['weekday'],
                 room=lesson['room'],
                 school_id=lesson['school_id'],
                 lesson_id=lesson['lesson_id'],
                 teacher=schemas.teachers.Teacher(
                     **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
-                )
+                ),
+                semester_id=lesson['semester_id']
             )
             returned_lessons.append(schemas_lesson)
 
@@ -134,43 +145,15 @@ class LessonService(BaseService):
                                            class_id=class_id,
                                            subgroup_id=subgroup_id)
 
-    async def get_weekday_list_with_weekday(
-            self,
-            weekday: int,
-            class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None
-    ) -> schemas.lessons.LessonListWithWeekday:
-        lessons = await self.get_weekday_list(class_id=class_id,
-                                              subgroup_id=subgroup_id,
-                                              weekday=weekday)
-        return schemas.lessons.LessonListWithWeekday(
-            lessons=lessons,
-            weekday=weekday
-        )
-
     async def get_nearest_weekday_list(
             self,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None
+            subgroup_id: Optional[int] = None,
     ):
-        weekday = dt.datetime.today().weekday()
-        for day in range(weekday, 7):
-            near = await self.get_weekday_list_with_weekday(
-                weekday=day,
-                class_id=class_id,
-                subgroup_id=subgroup_id
-            )
-            if near.lessons:
-                return near
+        lessons = await self._get_list(class_id=class_id,
+                                       subgroup_id=subgroup_id)
 
-        for day in range(0, weekday):
-            near = await self.get_weekday_list_with_weekday(
-                weekday=day,
-                class_id=class_id,
-                subgroup_id=subgroup_id
-            )
-            if near.lessons:
-                return near
+
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get(
@@ -185,6 +168,7 @@ class LessonService(BaseService):
             weekday=lesson_schema.weekday,
             school_id=lesson_schema.school_id,
             teacher_id=lesson_schema.teacher_id
+
         )
         lesson = await self.session.scalar(query)
         if lesson is None:
@@ -221,6 +205,3 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
-
-
-

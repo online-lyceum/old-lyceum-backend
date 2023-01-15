@@ -67,13 +67,15 @@ class Lesson(Base):
     name = Column(String, nullable=False)
     start_time = Column(Time, nullable=False)
     end_time = Column(Time, nullable=False)
-    week = Column(Integer)
+    is_odd_week = Column(Integer)
     weekday = Column(Integer, nullable=False)
     room = Column(String, nullable=False)
     teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
                         nullable=False)
     school_id = Column(ForeignKey('schools.school_id', ondelete='CASCADE'),
                        nullable=False)
+    semester_id = Column(ForeignKey('semesters.semester_id', ondelete='CASCADE'),
+                         nullable=False)
 
     __table_args__ = (
         UniqueConstraint(

@@ -10,10 +10,11 @@ class BaseLesson(BaseModel):
     name: str
     start_time: Time
     end_time: Time
-    week: Optional[bool] = None
+    is_odd_week: Optional[bool] = None
     weekday: int = Field(0, ge=0, le=6)
     room: str
     school_id: int
+    semester_id: int
 
 
 class InternalLesson(BaseLesson):
@@ -33,11 +34,6 @@ class Lesson(InternalLesson):
 
 class LessonList(BaseModel):
     lessons: list[Lesson]
-
-
-class LessonListWithWeekday(BaseModel):
-    lessons: list[Lesson]
-    weekday: int
 
 
 class DayLessonList(LessonList):
