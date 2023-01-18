@@ -85,7 +85,8 @@ class Lesson(Base):
             'weekday',
             'room',
             'school_id',
-            'teacher_id'
+            'teacher_id',
+            'semester_id'
         ),
     )
 
