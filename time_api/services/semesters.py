@@ -2,7 +2,7 @@ import logging
 import datetime as dt
 from typing import Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, exc
 from fastapi import status, HTTPException, Depends
 
 from .base import BaseService
@@ -72,13 +72,21 @@ class SemesterService(BaseService):
 
     async def get(
             self, *,
-            semester_id: int
+            semester_id: int = None,
+            semester_schema: schemas.semesters.SemesterCreate = None
     ) -> tables.Semester:
         query = select(tables.Semester)
 
         if semester_id is not None:
             query = query.filter_by(
                 semester_id=semester_id
+            )
+
+        if semester_schema is not None:
+            query = query.filter_by(
+                school_id=semester_schema.school_id,
+                start_date=dt.date(**semester_schema.start_date.dict()),
+                end_date=dt.date(**semester_schema.end_date.dict())
             )
 
         semester = await self.session.scalar(query)
@@ -90,12 +98,16 @@ class SemesterService(BaseService):
             self,
             semester_schema: schemas.semesters.SemesterCreate
     ):
-        dct = semester_schema.dict()
-        dct['start_date'] = dt.date(**dct['start_date'])
-        dct['end_date'] = dt.date(**dct['end_date'])
-        new_semester = tables.Semester(**dct)
-        self.session.add(new_semester)
-        await self.session.commit()
+        try:
+            dct = semester_schema.dict()
+            dct['start_date'] = dt.date(**dct['start_date'])
+            dct['end_date'] = dt.date(**dct['end_date'])
+            new_semester = tables.Semester(**dct)
+            self.session.add(new_semester)
+            await self.session.commit()
+        except exc.IntegrityError:
+            await self.session.rollback()
+            new_semester = await self.get(semester_schema=semester_schema)
         return new_semester
 
     async def delete(
