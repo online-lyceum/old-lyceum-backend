@@ -40,7 +40,7 @@ class LessonService(BaseService):
             self,
             session: AsyncSession = Depends(get_session),
             semester_service: SemesterService = Depends(SemesterService)
-     ):
+    ):
         super().__init__(session=session)
         self.semester_service = semester_service
 
@@ -48,14 +48,14 @@ class LessonService(BaseService):
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
-            week: Optional[bool] = None,
+            is_odd_week: Optional[bool] = None,
             weekday: Optional[int] = None,
             semester_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         lessons = await self._get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,
-            is_odd_week=week,
+            is_odd_week=is_odd_week,
             weekday=weekday,
             semester_id=semester_id
         )
@@ -156,8 +156,7 @@ class LessonService(BaseService):
     async def get_today_list(
             self,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None,
-            semester_service: SemesterService = Depends(SemesterService)
+            subgroup_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         today = dt.datetime.today().weekday()
         return await self.get_weekday_list(
@@ -174,7 +173,7 @@ class LessonService(BaseService):
         current_semester = await self.semester_service.get_current()
         current_semester = current_semester.semester
 
-        today_weekday = dt.datetime.today().weekday()
+        today = dt.datetime.today()
 
         is_odd_week = await self.semester_service.get_week(
             start_date=dt.date(
@@ -184,7 +183,7 @@ class LessonService(BaseService):
             week_reverse=current_semester.week_reverse
         )
 
-        for weekday in range(today_weekday, 7):
+        for weekday in range(today.weekday(), 7):
             try:
                 lessons = await self._get_list(
                     semester_id=current_semester.semester_id,
@@ -196,7 +195,7 @@ class LessonService(BaseService):
             except HTTPException:
                 continue
             return lessons
-        for weekday in range(0, today_weekday):
+        for weekday in range(0, today.weekday()):
             try:
                 lessons = await self._get_list(
                     semester_id=current_semester.semester_id,
@@ -209,7 +208,7 @@ class LessonService(BaseService):
                 continue
             return lessons
 
-        for weekday in range(0, today_weekday):
+        for weekday in range(0, today.weekday()):
             try:
                 lessons = await self._get_list(
                     semester_id=current_semester.semester_id,
@@ -221,7 +220,7 @@ class LessonService(BaseService):
             except HTTPException:
                 continue
             return lessons
-        for weekday in range(today_weekday, 7):
+        for weekday in range(today.weekday(), 7):
             try:
                 lessons = await self._get_list(
                     semester_id=current_semester.semester_id,
