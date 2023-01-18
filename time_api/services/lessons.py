@@ -183,7 +183,23 @@ class LessonService(BaseService):
             week_reverse=current_semester.week_reverse
         )
 
-        for weekday in range(today.weekday(), 7):
+        flag = 0
+        try:
+            lesson = (await self._get_list(
+                semester_id=current_semester.semester_id,
+                class_id=class_id,
+                subgroup_id=subgroup_id,
+                weekday=today.weekday(),
+                is_odd_week=is_odd_week
+            ))[-1]
+            end_time = schemas.lessons.InternalLesson.from_orm(lesson).end_time
+            if dt.time(hour=end_time.hour,
+                       minute=end_time.minute) <= today.now().time():
+                flag = 1
+        except HTTPException:
+            pass
+
+        for weekday in range(today.weekday() + flag, 7):
             try:
                 lessons = await self._get_list(
                     semester_id=current_semester.semester_id,
