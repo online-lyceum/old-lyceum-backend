@@ -3,14 +3,16 @@ import datetime as dt
 from typing import Optional, Any
 
 from sqlalchemy import select, exc
+from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import status, HTTPException, Depends
 
 from time_api.services.semesters import SemesterService
-from .base import BaseService
+from time_api.services.base import BaseService
 from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
 from time_api import schemas
 from time_api.services.teachers import TeacherService
+from time_api.db.base import get_session
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,14 @@ def _dict_to_schemas_lessons(lesson: dict):
 
 
 class LessonService(BaseService):
+
+    def __init__(
+            self,
+            session: AsyncSession = Depends(get_session),
+            semester_service: SemesterService = Depends(SemesterService)
+     ):
+        super().__init__(session=session)
+        self.semester_service = semester_service
 
     async def get_list(
             self,
@@ -122,10 +132,9 @@ class LessonService(BaseService):
             weekday: int,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
-            is_odd_week: Optional[bool] = None,
-            semester_service: SemesterService = Depends(SemesterService)
+            is_odd_week: Optional[bool] = None
     ) -> schemas.lessons.LessonList:
-        semester = await semester_service.get_current()
+        semester = await self.semester_service.get_current()
 
         if is_odd_week is None:
             is_odd_week = semester.is_odd_week
@@ -154,22 +163,20 @@ class LessonService(BaseService):
         return await self.get_weekday_list(
             weekday=today,
             class_id=class_id,
-            subgroup_id=subgroup_id,
-            semester_service=semester_service
+            subgroup_id=subgroup_id
         )
 
     async def _get_nearest_weekday_list(
             self,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None,
-            semester_service: SemesterService = Depends(SemesterService)
+            subgroup_id: Optional[int] = None
     ):
-        current_semester = await semester_service.get_current()
+        current_semester = await self.semester_service.get_current()
         current_semester = current_semester.semester
 
         today_weekday = dt.datetime.today().weekday()
 
-        is_odd_week = await semester_service.get_week(
+        is_odd_week = await self.semester_service.get_week(
             start_date=dt.date(
                 current_semester.start_date.year,
                 current_semester.start_date.month,
@@ -232,13 +239,11 @@ class LessonService(BaseService):
     async def get_nearest_weekday_list(
             self,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None,
-            semester_service: SemesterService = Depends(SemesterService)
+            subgroup_id: Optional[int] = None
     ):
         lessons = await self._get_nearest_weekday_list(
             class_id=class_id,
-            subgroup_id=subgroup_id,
-            semester_service=semester_service
+            subgroup_id=subgroup_id
         )
 
         lessons = [await self._add_teacher(lesson) for lesson in lessons]

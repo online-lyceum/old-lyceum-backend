@@ -4,28 +4,13 @@ from typing import Optional
 from fastapi import APIRouter, Depends
 
 from time_api import schemas
-from time_api.services.lessons import LessonService as _LessonService
-from time_api.services.semesters import SemesterService as _SemesterService
+from time_api.services.lessons import LessonService
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix='/api/lessons',
     tags=['Lessons'],
 )
-
-
-class AllService:
-    def __init__(
-            self,
-
-            semester_service:
-            _SemesterService = Depends(_SemesterService),
-
-            lesson_service:
-            _LessonService = Depends(_LessonService)
-    ):
-        self.semester = semester_service
-        self.lesson = lesson_service
 
 
 @router.get(
@@ -35,9 +20,9 @@ class AllService:
 async def get_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.get_list(
+    return await lesson_service.get_list(
         class_id=class_id,
         subgroup_id=subgroup_id
     )
@@ -50,12 +35,11 @@ async def get_lessons(
 async def get_today_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.get_today_list(
+    return await lesson_service.get_today_list(
         class_id=class_id,
-        subgroup_id=subgroup_id,
-        semester_service=service.semester
+        subgroup_id=subgroup_id
     )
 
 
@@ -68,14 +52,13 @@ async def get_weekday_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
         is_odd_week: Optional[bool] = None,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.get_weekday_list(
+    return await lesson_service.get_weekday_list(
         weekday=weekday,
         class_id=class_id,
         subgroup_id=subgroup_id,
-        is_odd_week=is_odd_week,
-        semester_service=service.semester
+        is_odd_week=is_odd_week
     )
 
 
@@ -86,12 +69,11 @@ async def get_weekday_lessons(
 async def get_nearest_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.get_nearest_weekday_list(
+    return await lesson_service.get_nearest_weekday_list(
         class_id=class_id,
-        subgroup_id=subgroup_id,
-        semester_service=service.semester
+        subgroup_id=subgroup_id
     )
 
 
@@ -108,9 +90,9 @@ async def get_nearest_lessons(
 )
 async def create_lesson(
         lesson: schemas.lessons.LessonCreate,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.create(lesson)
+    return await lesson_service.create(lesson)
 
 
 @router.post(
@@ -126,9 +108,11 @@ async def create_lesson(
 )
 async def add_subgroup_to_lesson(
         subgroup_lesson: schemas.subgroups_lessons.LessonSubgroupCreate,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.add_subgroup_to_lesson(subgroup_lesson=subgroup_lesson)
+    return await lesson_service.add_subgroup_to_lesson(
+        subgroup_lesson=subgroup_lesson
+    )
 
 
 @router.delete(
@@ -137,6 +121,6 @@ async def add_subgroup_to_lesson(
 )
 async def delete_lesson(
         lesson_id: int,
-        service: AllService = Depends(AllService)
+        lesson_service: LessonService = Depends(LessonService)
 ):
-    return await service.lesson.delete(lesson_id)
+    return await lesson_service.delete(lesson_id)
