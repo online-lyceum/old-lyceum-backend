@@ -31,7 +31,7 @@ class SemesterService(BaseService):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return semesters
 
-    async def _get_week(
+    async def get_week(
             self,
             start_date:
             dt.date,
@@ -60,7 +60,7 @@ class SemesterService(BaseService):
 
         week: Optional[bool] = None
         if semester.week_reverse is not None:
-            week = await self._get_week(
+            week = await self.get_week(
                 start_date=semester.start_date,
                 week_reverse=semester.week_reverse
             )

@@ -20,7 +20,7 @@ def _dict_to_schemas_lessons(lesson: dict):
         name=lesson['name'],
         start_time=dt.time(**lesson['start_time']),
         end_time=dt.time(**lesson['end_time']),
-        week=lesson['is_odd_week'],
+        is_odd_week=lesson['is_odd_week'],
         weekday=lesson['weekday'],
         room=lesson['room'],
         school_id=lesson['school_id'],
@@ -169,7 +169,7 @@ class LessonService(BaseService):
 
         today_weekday = dt.datetime.today().weekday()
 
-        is_odd_week = await semester_service._get_week(
+        is_odd_week = await semester_service.get_week(
             start_date=dt.date(
                 current_semester.start_date.year,
                 current_semester.start_date.month,
@@ -177,7 +177,55 @@ class LessonService(BaseService):
             week_reverse=current_semester.week_reverse
         )
 
-        # TODO: Logic
+        for weekday in range(today_weekday, 7):
+            try:
+                lessons = await self._get_list(
+                    semester_id=current_semester.semester_id,
+                    class_id=class_id,
+                    subgroup_id=subgroup_id,
+                    weekday=weekday,
+                    is_odd_week=is_odd_week
+                )
+            except HTTPException:
+                continue
+            return lessons
+        for weekday in range(0, today_weekday):
+            try:
+                lessons = await self._get_list(
+                    semester_id=current_semester.semester_id,
+                    class_id=class_id,
+                    subgroup_id=subgroup_id,
+                    weekday=weekday,
+                    is_odd_week=is_odd_week
+                )
+            except HTTPException:
+                continue
+            return lessons
+
+        for weekday in range(0, today_weekday):
+            try:
+                lessons = await self._get_list(
+                    semester_id=current_semester.semester_id,
+                    class_id=class_id,
+                    subgroup_id=subgroup_id,
+                    weekday=weekday,
+                    is_odd_week=(not is_odd_week)
+                )
+            except HTTPException:
+                continue
+            return lessons
+        for weekday in range(today_weekday, 7):
+            try:
+                lessons = await self._get_list(
+                    semester_id=current_semester.semester_id,
+                    class_id=class_id,
+                    subgroup_id=subgroup_id,
+                    weekday=weekday,
+                    is_odd_week=(not is_odd_week)
+                )
+            except HTTPException:
+                continue
+            return lessons
 
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
