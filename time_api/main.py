@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 
-from time_api import api
-from time_api.description import application_metadata
 import logging
 
 
@@ -10,8 +8,12 @@ logging.basicConfig(
     format="[%(asctime)s] [%(process)s] [%(levelname)s] "
            "(%(filename)s:%(lineno)d) %(msg)s"
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("time_api")
+logger.setLevel("DEBUG")
 logger.info('Logger start work')
+
+from time_api import api
+from time_api.description import application_metadata
 
 
 def create_application():

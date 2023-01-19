@@ -1,4 +1,3 @@
-import logging
 import datetime as dt
 from typing import Optional, Any
 
@@ -13,8 +12,6 @@ from time_api.schemas.lessons import LessonCreate, Lesson
 from time_api import schemas
 from time_api.services.teachers import TeacherService
 from time_api.db.base import get_session
-
-logger = logging.getLogger(__name__)
 
 
 def _dict_to_schemas_lessons(lesson: dict):
@@ -106,7 +103,7 @@ class LessonService(BaseService):
 
         if is_odd_week is not None:
             query = query.filter(
-                tables.Lesson.is_odd_week == is_odd_week
+                tables.Lesson.is_odd_week != (not is_odd_week)
             )
 
         if weekday is not None:
@@ -120,7 +117,6 @@ class LessonService(BaseService):
             )
 
         query = query.order_by(tables.Lesson.start_time)
-
         lessons = list(await self.session.scalars(query))
         if not lessons:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -147,8 +143,6 @@ class LessonService(BaseService):
             is_odd_week=is_odd_week
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
-        logger.debug(f'Today has {lessons=}')
-
         return schemas.lessons.LessonList(
             lessons=lessons
         )
@@ -176,12 +170,10 @@ class LessonService(BaseService):
         today = dt.datetime.today()
 
         is_odd_week = await self.semester_service.get_week(
-            start_date=dt.date(
-                current_semester.start_date.year,
-                current_semester.start_date.month,
-                current_semester.start_date.day),
+            start_date=dt.date(**current_semester.start_date.dict()),
             week_reverse=current_semester.week_reverse
         )
+
 
         flag = 0
         try:
@@ -248,7 +240,6 @@ class LessonService(BaseService):
             except HTTPException:
                 continue
             return lessons
-
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get_nearest_weekday_list(
@@ -262,7 +253,6 @@ class LessonService(BaseService):
         )
 
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
-        logger.debug(f'Today has {lessons=}')
         returned_lessons: list[Lesson] = []
         for lesson in lessons:
             lesson = _dict_to_schemas_lessons(lesson)

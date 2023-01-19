@@ -3,7 +3,7 @@ import datetime as dt
 from typing import Optional
 
 from sqlalchemy import select, exc
-from fastapi import status, HTTPException, Depends
+from fastapi import status, HTTPException
 
 from .base import BaseService
 from time_api.db import tables
@@ -33,8 +33,7 @@ class SemesterService(BaseService):
 
     async def get_week(
             self,
-            start_date:
-            dt.date,
+            start_date: dt.date,
             week_reverse: bool
     ) -> bool:
         start_week = start_date.isocalendar()[1]
