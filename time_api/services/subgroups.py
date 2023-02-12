@@ -16,7 +16,7 @@ class SubgroupService(BaseService):
     async def get_list(
             self, 
             school_id: Optional[int] = None, 
-            class_id: Optional[int]
+            class_id: Optional[int] = None
         ):
         return schemas.subgroups.SubgroupList(
             subgroups=await self._get_list(
