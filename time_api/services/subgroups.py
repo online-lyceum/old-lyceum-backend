@@ -14,10 +14,10 @@ logger = logging.getLogger(__name__)
 class SubgroupService(BaseService):
 
     async def get_list(
-            self, 
-            school_id: Optional[int] = None, 
+            self,
+            school_id: Optional[int] = None,
             class_id: Optional[int] = None
-        ):
+    ):
         return schemas.subgroups.SubgroupList(
             subgroups=await self._get_list(
                 school_id=school_id,
@@ -26,7 +26,7 @@ class SubgroupService(BaseService):
         )
 
     async def _get_list(
-            self, 
+            self,
             school_id: Optional[int] = None,
             class_id: Optional[int] = None,
     ) -> list[tables.Subgroup]:
@@ -34,14 +34,16 @@ class SubgroupService(BaseService):
         query = select(tables.Subgroup)
 
         if school_id is not None:
-            query = query.join(tables.Class, tables.Class.class_id == tables.Subgroup)
+            query = query.join(
+                tables.Class,
+                tables.Class.class_id == tables.Subgroup.class_id
+            )
             query = query.filter_by(
                 school_id=school_id
             )
 
-        if class_id not None:
+        if class_id is not None:
             query = query.filter_by(class_id=class_id)
-
 
         subgroups = list(await self.session.scalars(query))
         if not subgroups:
@@ -56,7 +58,6 @@ class SubgroupService(BaseService):
     ):
         query = select(tables.Subgroup)
 
-         
         if class_id is not None:
             query = query.filter_by(
                 class_id=class_id
