@@ -19,10 +19,14 @@ router = APIRouter(
     response_model=schemas.subgroups.SubgroupList
 )
 async def get_subgroups(
+        school_id: Optional[int] = None,
         class_id: Optional[int] = None,
         service: SubgroupService = Depends(SubgroupService)
 ):
-    return await service.get_list(class_id=class_id)
+    return await service.get_list(
+            school_id=school_id,
+            class_id=class_id
+    )
 
 
 @router.post(

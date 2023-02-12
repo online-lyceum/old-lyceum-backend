@@ -13,13 +13,38 @@ logger = logging.getLogger(__name__)
 
 class SubgroupService(BaseService):
 
-    async def get_list(self, class_id: Optional[int]):
+    async def get_list(
+            self,
+            school_id: Optional[int] = None,
+            class_id: Optional[int] = None
+    ):
         return schemas.subgroups.SubgroupList(
-            subgroups=await self._get_list(class_id=class_id)
+            subgroups=await self._get_list(
+                school_id=school_id,
+                class_id=class_id
+            )
         )
 
-    async def _get_list(self, class_id: Optional[int]) -> list[tables.Subgroup]:
-        query = select(tables.Subgroup).filter_by(class_id=class_id)
+    async def _get_list(
+            self,
+            school_id: Optional[int] = None,
+            class_id: Optional[int] = None,
+    ) -> list[tables.Subgroup]:
+
+        query = select(tables.Subgroup)
+
+        if school_id is not None:
+            query = query.join(
+                tables.Class,
+                tables.Class.class_id == tables.Subgroup.class_id
+            )
+            query = query.filter_by(
+                school_id=school_id
+            )
+
+        if class_id is not None:
+            query = query.filter_by(class_id=class_id)
+
         subgroups = list(await self.session.scalars(query))
         if not subgroups:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
@@ -29,7 +54,7 @@ class SubgroupService(BaseService):
             self, *,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
-            subgroup_schema: schemas.subgroups.SubgroupCreate = None
+            subgroup_schema: Optional[schemas.subgroups.SubgroupCreate] = None
     ):
         query = select(tables.Subgroup)
 
