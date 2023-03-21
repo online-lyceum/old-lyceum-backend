@@ -24,10 +24,10 @@ class LessonService(BaseService):
             weekday: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         lessons = await self._get_list(
-                class_id=class_id,
-                subgroup_id=subgroup_id,
-                week=week,
-                weekday=weekday
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            week=week,
+            weekday=weekday
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
         return schemas.lessons.LessonList(
@@ -114,7 +114,8 @@ class LessonService(BaseService):
                 school_id=lesson['school_id'],
                 lesson_id=lesson['lesson_id'],
                 teacher=schemas.teachers.Teacher(
-                    **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
+                    **schemas.teachers.Teacher.from_orm(
+                        lesson['teacher']).dict()
                 )
             )
             returned_lessons.append(schemas_lesson)
@@ -123,15 +124,42 @@ class LessonService(BaseService):
             lessons=returned_lessons
         )
 
+    async def is_using_double_week(
+            self,
+            class_id: int | None = None,
+            subgroup_id: int | None = None
+    ) -> bool:
+        query = select(tables.School.is_using_double_week).join(tables.Class)
+        if class_id is not None:
+            query.filter_by(class_id=class_id)
+
+        if subgroup_id is not None:
+            query = query.join(tables.Subgroup)
+            query = query.filter_by(subgroup_id=subgroup_id)
+
+        return await self.session.scalar(query)
+
     async def get_today_list(
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         today = dt.datetime.today().weekday()
-        return await self.get_weekday_list(weekday=today,
-                                           class_id=class_id,
-                                           subgroup_id=subgroup_id)
+        is_using_double_week = await self.is_using_double_week(
+            class_id, subgroup_id
+        )
+        week_range = 7 + 7 * is_using_double_week
+        for day in range(week_range):
+            lessons = await self.get_weekday_list(
+                weekday=(today + day) % week_range,
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            last_end_time = dt.time(**lessons.lessons[-1].end_time.dict())
+            is_ended = last_end_time < dt.datetime.now().time() and not day
+            if lessons and not is_ended:
+                return lessons
+        return schemas.lessons.LessonList(lessons=[])
 
     async def get_weekday_list_with_weekday(
             self,

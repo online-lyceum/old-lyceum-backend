@@ -16,7 +16,7 @@ class School(Base):
                        index=True)
     name = Column(String, nullable=False)
     address = Column(String, nullable=False)
-    is_university = Column(Boolean)
+    is_using_double_week = Column(Boolean)
 
     __table_args__ = (
         UniqueConstraint('name', 'address', name='uq_name_address'),

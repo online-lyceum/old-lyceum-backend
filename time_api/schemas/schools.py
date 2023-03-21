@@ -4,7 +4,7 @@ from pydantic import BaseModel
 class BaseSchool(BaseModel):
     name: str
     address: str
-    is_university: bool
+    is_using_double_week: bool
 
 
 class SchoolCreate(BaseSchool):
