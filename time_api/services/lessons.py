@@ -144,6 +144,7 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
+        logger.info(f'Current time is {dt.datetime.now()}')
         today = dt.datetime.today().weekday()
         is_using_double_week = await self.is_using_double_week(
             class_id, subgroup_id
