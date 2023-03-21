@@ -56,6 +56,7 @@ class SchoolService(BaseService):
 
         except exc.IntegrityError:
             await self.session.rollback()
+            self.response.status_code = status.HTTP_200_OK
 
             school = await self.get(school_schema=school_schema)
 

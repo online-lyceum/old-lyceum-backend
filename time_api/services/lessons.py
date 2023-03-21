@@ -5,10 +5,9 @@ from typing import Optional, Any
 from sqlalchemy import select, exc
 from fastapi import status, HTTPException
 
-from .base import BaseService
+from time_api.services.base import BaseService
 from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
-from time_api.schemas.lessons import DayLessonList
 from time_api import schemas
 from time_api.services.teachers import TeacherService
 
@@ -25,10 +24,10 @@ class LessonService(BaseService):
             weekday: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         lessons = await self._get_list(
-                class_id=class_id,
-                subgroup_id=subgroup_id,
-                week=week,
-                weekday=weekday
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            week=week,
+            weekday=weekday
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
         return schemas.lessons.LessonList(
@@ -115,7 +114,8 @@ class LessonService(BaseService):
                 school_id=lesson['school_id'],
                 lesson_id=lesson['lesson_id'],
                 teacher=schemas.teachers.Teacher(
-                    **schemas.teachers.Teacher.from_orm(lesson['teacher']).dict()
+                    **schemas.teachers.Teacher.from_orm(
+                        lesson['teacher']).dict()
                 )
             )
             returned_lessons.append(schemas_lesson)
@@ -124,39 +124,81 @@ class LessonService(BaseService):
             lessons=returned_lessons
         )
 
+    async def is_using_double_week(
+            self,
+            class_id: int | None = None,
+            subgroup_id: int | None = None
+    ) -> bool:
+        query = select(tables.School.is_using_double_week).join(tables.Class)
+        if class_id is not None:
+            query.filter_by(class_id=class_id)
+
+        if subgroup_id is not None:
+            query = query.join(tables.Subgroup)
+            query = query.filter_by(subgroup_id=subgroup_id)
+
+        return await self.session.scalar(query)
+
     async def get_today_list(
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None
     ) -> schemas.lessons.LessonList:
         today = dt.datetime.today().weekday()
-        return await self.get_weekday_list(weekday=today,
-                                           class_id=class_id,
-                                           subgroup_id=subgroup_id)
-
-    async def _today_is_done(self,
-                             class_id: int,
-                             subgroup_id: int) -> bool:
-        try:
-            lessons = await self.get_today_list(
+        is_using_double_week = await self.is_using_double_week(
+            class_id, subgroup_id
+        )
+        week_range = 7 + 7 * is_using_double_week
+        for day in range(week_range):
+            lessons = await self.get_weekday_list(
+                weekday=(today + day) % week_range,
                 class_id=class_id,
                 subgroup_id=subgroup_id
             )
-            lessons_end_time = dt.time(**(lessons[-1]['end_time']))
-            if lessons_end_time <= dt.datetime.now().time():
-                return True
+            last_end_time = dt.time(**lessons.lessons[-1].end_time.dict())
+            is_ended = last_end_time < dt.datetime.now().time() and not day
+            if lessons and not is_ended:
+                return lessons
+        return schemas.lessons.LessonList(lessons=[])
 
-        except HTTPException(status_code=404):
-            return True
+    async def get_weekday_list_with_weekday(
+            self,
+            weekday: int,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ) -> schemas.lessons.LessonListWithWeekday:
+        lessons = await self.get_weekday_list(class_id=class_id,
+                                              subgroup_id=subgroup_id,
+                                              weekday=weekday)
+        return schemas.lessons.LessonListWithWeekday(
+            lessons=lessons.lessons,
+            weekday=weekday
+        )
 
-        return False
+    async def get_nearest_weekday_list(
+            self,
+            class_id: Optional[int] = None,
+            subgroup_id: Optional[int] = None
+    ):
+        weekday = dt.datetime.today().weekday()
+        for day in range(weekday, 7):
+            near = await self.get_weekday_list_with_weekday(
+                weekday=day,
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            if near.lessons:
+                return near
 
-    async def get_nearest_weekday_list(self,
-                                       class_id: int,
-                                       subgroup_id: int):
-        if self._today_is_done(class_id=class_id,
-                               subgroup_id=subgroup_id):
-            return True
+        for day in range(0, weekday):
+            near = await self.get_weekday_list_with_weekday(
+                weekday=day,
+                class_id=class_id,
+                subgroup_id=subgroup_id
+            )
+            if near.lessons:
+                return near
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get(
             self, *,
