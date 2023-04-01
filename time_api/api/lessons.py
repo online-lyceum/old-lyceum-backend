@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Any
 
 from fastapi import APIRouter, Depends
 
@@ -16,16 +16,25 @@ router = APIRouter(
 
 @router.get(
     '',
-    response_model=schemas.lessons.LessonList
+    response_model=Any[
+        schemas.lessons.LessonListWithDouble,
+        schemas.lessons.LessonList
+    ],
+    description='''
+        Return one of lessons_list or lessons_list with doubled lessons
+        Return depends on do_double query parameter
+    '''
 )
 async def get_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
+        do_double: Optional[bool] = False,
         service: LessonService = Depends(LessonService)
 ):
     return await service.get_list(
         class_id=class_id,
-        subgroup_id=subgroup_id
+        subgroup_id=subgroup_id,
+        do_double=do_double
     )
 
 

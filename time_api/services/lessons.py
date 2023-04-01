@@ -18,11 +18,13 @@ class LessonService(BaseService):
 
     async def get_list(
             self,
-            class_id: Optional[int] = None,
+e           class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int] = None
-    ) -> schemas.lessons.LessonList:
+            weekday: Optional[int] = None,
+            dO_double: bool = False
+    ) -> Any[schemas.lessons.LessonList, 
+             schemas.lessons.LessonListWithDouble]:
         lessons = await self._get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,
@@ -30,6 +32,35 @@ class LessonService(BaseService):
             weekday=weekday
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
+
+        if do_double:  # Check for double lesson
+            ret = []
+            checked_indexes = []
+            for i, lesson in enumerate(lessons[:-1]):
+                if i in checked_indexes:
+                    continue
+                if lesson.name == lessons[i + 1].name\
+                        and lesson.teacher_id == lessons[i + 1].teacher_id\
+                        and lesson.room == lessons[i + 1].room:
+                    lesson = schemas.lessons.DoubleLesson(**lesson.dict())
+                    lesson.start_time = [
+                            lesson.start_time,
+                            lessons[i].start_time
+                    ]
+                    lesson.end_time = [
+                            lesson.end_time,
+                            lessons[i].end_time
+                    ]
+                    ret.append(lesson)
+                    checked_indexes.append(i + 1)
+                else:
+                    lesson = schemas.lessons.DoubleLesson(**lesson.dict())
+                    lesson.start_time = [lesson.start_time]
+                    lesson.end_time = [lesson.end_time]
+            return schemas.lessons.LessonListWithDouble(
+                    lessons=ret
+            )
+
         return schemas.lessons.LessonList(
             lessons=lessons
         )
@@ -88,6 +119,7 @@ class LessonService(BaseService):
         lessons = list(await self.session.scalars(query))
         if not lessons:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
 
         return lessons
 

@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Any
 
 from pydantic import BaseModel, Field
 
@@ -31,8 +31,17 @@ class Lesson(InternalLesson):
     teacher: Teacher
 
 
+class DoubleLesson(Lesson):
+    start_time: list[Time]
+    end_time: list[Time]
+
+
 class LessonList(BaseModel):
     lessons: list[Lesson]
+
+
+class LessonListWithDouble(BaseModel):
+    lessons: list[Any[DoubleLesson]]
 
 
 class LessonListWithWeekday(BaseModel):
