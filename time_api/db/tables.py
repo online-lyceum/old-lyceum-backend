@@ -109,7 +109,8 @@ class Semester(Base):
     __tablename__ = "semesters"
     semester_id = Column(Integer, autoincrement=True, primary_key=True,
                          index=True)
-    school_id = Column(ForeignKey('schools.school_id'), nullable=False)
+    school_id = Column(ForeignKey('schools.school_id',
+                                  ondelete='CASCADE'), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     week_reverse = Column(Boolean, nullable=True, default=None)
