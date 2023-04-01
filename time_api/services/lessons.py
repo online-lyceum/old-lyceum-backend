@@ -18,13 +18,12 @@ class LessonService(BaseService):
 
     async def get_list(
             self,
-e           class_id: Optional[int] = None,
+            class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
             weekday: Optional[int] = None,
-            dO_double: bool = False
-    ) -> Any[schemas.lessons.LessonList, 
-             schemas.lessons.LessonListWithDouble]:
+            do_double: bool = False
+    ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         lessons = await self._get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,

@@ -1,4 +1,4 @@
-from typing import Optional, Any
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -41,7 +41,7 @@ class LessonList(BaseModel):
 
 
 class LessonListWithDouble(BaseModel):
-    lessons: list[Any[DoubleLesson]]
+    lessons: list[DoubleLesson]
 
 
 class LessonListWithWeekday(BaseModel):
