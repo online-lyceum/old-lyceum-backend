@@ -23,8 +23,7 @@ e           class_id: Optional[int] = None,
             week: Optional[bool] = None,
             weekday: Optional[int] = None,
             dO_double: bool = False
-    ) -> Any[schemas.lessons.LessonList, 
-             schemas.lessons.LessonListWithDouble]:
+    ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         lessons = await self._get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,

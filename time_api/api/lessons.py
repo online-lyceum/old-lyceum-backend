@@ -16,10 +16,7 @@ router = APIRouter(
 
 @router.get(
     '',
-    response_model=Any[
-        schemas.lessons.LessonListWithDouble,
-        schemas.lessons.LessonList
-    ],
+    response_model=schemas.lessons.LessonListWithDouble | schemas.lessons.LessonList
     description='''
         Return one of lessons_list or lessons_list with doubled lessons
         Return depends on do_double query parameter
