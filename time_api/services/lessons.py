@@ -38,22 +38,22 @@ class LessonService(BaseService):
             for i, lesson in enumerate(lessons[:-1]):
                 if i in checked_indexes:
                     continue
-                if lesson.name == lessons[i + 1].name\
-                        and lesson.teacher_id == lessons[i + 1].teacher_id\
-                        and lesson.room == lessons[i + 1].room:
-                    lesson = schemas.lessons.DoubleLesson(**lesson.dict())
+                if lesson['name'] == lessons[i + 1]['name']\
+                        and lesson['teacher_id'] == lessons[i + 1]['teacher_id']\
+                        and lesson['room'] == lessons[i + 1]['room']:
+                    lesson = schemas.lessons.DoubleLesson(**lesson)
                     lesson.start_time = [
                             lesson.start_time,
-                            lessons[i].start_time
+                            lessons[i + 1]['start_time']
                     ]
                     lesson.end_time = [
                             lesson.end_time,
-                            lessons[i].end_time
+                            lessons[i + 1]['end_time']
                     ]
                     ret.append(lesson)
                     checked_indexes.append(i + 1)
                 else:
-                    lesson = schemas.lessons.DoubleLesson(**lesson.dict())
+                    lesson = schemas.lessons.DoubleLesson(**lesson)
                     lesson.start_time = [lesson.start_time]
                     lesson.end_time = [lesson.end_time]
             return schemas.lessons.LessonListWithDouble(
