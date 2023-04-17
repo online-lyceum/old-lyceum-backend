@@ -3,14 +3,13 @@
 pipeline {
     agent any
     stages {
-        stage("Build image") {
+        stage("Build and up") {
             steps {
-                sh 'docker build -t time_api:${JOB_NAME} .'
+                sh 'docker-compose up -d --build --remove-orphans'
             }
         }
-        stage("Run images") {
+        stage("DB Migrate") {
             steps {
-                sh 'docker-compose up -d --remove-orphans'
                 sh 'docker-compose exec -d api init_models'
             }
         }
