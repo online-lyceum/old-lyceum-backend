@@ -1,14 +1,15 @@
 version: '3'
 services:
   api:
-    image: "time_api:${JOB_NAME}"
+    build: ./
     restart: always
     depends_on:
       - "postgres"
     env_file:
       - .variables.env
+    ports:
+      - "8080:80"
     networks:
-      front_net:
       default:
 
   postgres:
@@ -18,7 +19,3 @@ services:
       - .variables.env
     networks:
       default:
-
-networks:
-  front_net:
-    external: true
