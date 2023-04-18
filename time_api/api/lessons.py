@@ -39,7 +39,8 @@ async def get_lessons(
 
 @router.get(
     '/today',
-    response_model=schemas.lessons.LessonList
+    response_model=schemas.lessons.LessonList,
+    deprecated=True
 )
 async def get_today_lessons(
         subgroup_id: Optional[int] = None,
@@ -72,8 +73,7 @@ async def get_weekday_lessons(
 
 @router.get(
     '/nearest_day',
-    response_model=schemas.lessons.LessonListWithWeekday,
-    deprecated=True
+    response_model=schemas.lessons.LessonListWithWeekday
 )
 async def get_weekday_lessons(
         subgroup_id: Optional[int] = None,
