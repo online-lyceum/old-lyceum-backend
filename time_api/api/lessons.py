@@ -25,11 +25,13 @@ router = APIRouter(
 async def get_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
+        weekday: Optional[int] = None,
         do_double: Optional[bool] = False,
         service: LessonService = Depends(LessonService)
 ):
     return await service.get_list(
         class_id=class_id,
+        weekday=weekday,
         subgroup_id=subgroup_id,
         do_double=do_double
     )
