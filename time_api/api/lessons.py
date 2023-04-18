@@ -1,11 +1,10 @@
 import logging
-from typing import Optional, Any
+from typing import Optional
 
 from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.lessons import LessonService
-
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -16,7 +15,8 @@ router = APIRouter(
 
 @router.get(
     '',
-    response_model=schemas.lessons.LessonListWithDouble | schemas.lessons.LessonList,
+    response_model=(
+            schemas.lessons.LessonListWithDouble | schemas.lessons.LessonList),
     description='''
         Return one of lessons_list or lessons_list with doubled lessons
         Return depends on do_double query parameter
@@ -54,7 +54,8 @@ async def get_today_lessons(
 
 @router.get(
     '/weekday',
-    response_model=schemas.lessons.LessonList
+    response_model=schemas.lessons.LessonList,
+    deprecated=True
 )
 async def get_weekday_lessons(
         weekday: Optional[int] = None,
@@ -71,7 +72,8 @@ async def get_weekday_lessons(
 
 @router.get(
     '/nearest_day',
-    response_model=schemas.lessons.LessonListWithWeekday
+    response_model=schemas.lessons.LessonListWithWeekday,
+    deprecated=True
 )
 async def get_weekday_lessons(
         subgroup_id: Optional[int] = None,
