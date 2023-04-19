@@ -39,23 +39,22 @@ class LessonService(BaseService):
                 if i in checked_indexes:
                     continue
                 if lesson['name'] == lessons[i + 1]['name']\
-                        and lesson['teacher_id'] == lessons[i + 1]['teacher_id']\
+                        and lesson.get('teacher_id') == lessons[i + 1].get('teacher_id') \
                         and lesson['room'] == lessons[i + 1]['room']:
-                    lesson = schemas.lessons.DoubleLesson(**lesson)
-                    lesson.start_time = [
-                            lesson.start_time,
+                    lesson['start_time'] = [
+                            lesson['start_time'],
                             lessons[i + 1]['start_time']
                     ]
-                    lesson.end_time = [
-                            lesson.end_time,
+                    lesson['end_time'] = [
+                            lesson['end_time'],
                             lessons[i + 1]['end_time']
                     ]
-                    ret.append(lesson)
+                    ret.append(schemas.lessons.DoubleLesson(**lesson))
                     checked_indexes.append(i + 1)
                 else:
-                    lesson = schemas.lessons.DoubleLesson(**lesson)
-                    lesson.start_time = [lesson.start_time]
-                    lesson.end_time = [lesson.end_time]
+                    lesson['start_time'] = [lesson['start_time']]
+                    lesson['end_time'] = [lesson['end_time']]
+                    ret.append(schemas.lessons.DoubleLesson(**lesson))
             return schemas.lessons.LessonListWithDouble(
                     lessons=ret
             )
@@ -207,28 +206,28 @@ class LessonService(BaseService):
             weekday=weekday
         )
 
-    async def get_nearest_weekday_list(
+    async def get_nearest_list(
             self,
             class_id: Optional[int] = None,
-            subgroup_id: Optional[int] = None
-    ):
+            subgroup_id: Optional[int] = None,
+            do_double: bool = False
+    ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         weekday = dt.datetime.today().weekday()
-        for day in range(weekday, 7):
-            near = await self.get_weekday_list_with_weekday(
+        for day in list(range(weekday, 7)) + list(range(0, weekday)):
+            near = await self.get_list(
                 weekday=day,
                 class_id=class_id,
-                subgroup_id=subgroup_id
+                subgroup_id=subgroup_id,
+                do_double=do_double
             )
             if near.lessons:
-                return near
-
-        for day in range(0, weekday):
-            near = await self.get_weekday_list_with_weekday(
-                weekday=day,
-                class_id=class_id,
-                subgroup_id=subgroup_id
-            )
-            if near.lessons:
+                if weekday == near.lessons[-1].weekday:
+                    end_time = near.lessons[-1].end_time
+                    end_time = end_time if not do_double else end_time[-1]
+                    if end_time.hour < dt.datetime.now().hour \
+                            or end_time.hour == dt.datetime.now().hour \
+                            and end_time.minute < dt.datetime.now().minute:
+                        continue
                 return near
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
@@ -280,3 +279,4 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
+
