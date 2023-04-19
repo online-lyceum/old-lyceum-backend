@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Union 
 
 from fastapi import APIRouter, Depends
 
@@ -73,16 +73,21 @@ async def get_weekday_lessons(
 
 @router.get(
     '/nearest_day',
-    response_model=schemas.lessons.LessonListWithWeekday
+    response_model=Union[
+        schemas.lessons.LessonList,
+        schemas.lessons.LessonListWithDouble
+    ]
 )
-async def get_weekday_lessons(
+async def get_nearest_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
+        do_double: bool = False,
         service: LessonService = Depends(LessonService)
 ):
-    return await service.get_nearest_weekday_list(
+    return await service.get_nearest_list(
         class_id=class_id,
-        subgroup_id=subgroup_id
+        subgroup_id=subgroup_id,
+        do_double=do_double
     )
 
 
