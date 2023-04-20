@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.schools import SchoolService
+from time_api.services.auth import authenticate
 
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ async def get_schools(
 )
 async def create_school(
         school: schemas.schools.SchoolCreate,
+        _=Depends(authenticate()),
         service: SchoolService = Depends(SchoolService)
 ):
     return await service.create(school)

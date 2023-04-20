@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.subgroups import SubgroupService
+from time_api.services.auth import authenticate
 
 
 logger = logging.getLogger(__name__)
@@ -42,6 +43,7 @@ async def get_subgroups(
 )
 async def create_subgroup(
         subgroup: schemas.subgroups.SubgroupCreate,
+        _=Depends(authenticate()),
         service: SubgroupService = Depends(SubgroupService)
 ):
     return await service.create(subgroup)

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.classes import ClassService
+from time_api.services.auth import authenticate
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +39,7 @@ async def get_classes(
 )
 async def create_class(
         class_: schemas.classes.ClassCreate,
+        _ = Depends(authenticate()),
         service: ClassService = Depends(ClassService)
 ):
     return await service.create(class_)

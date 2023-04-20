@@ -10,6 +10,7 @@ from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
 from time_api import schemas
 from time_api.services.teachers import TeacherService
+from time_api.services.semesters import SemesterService
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,15 @@ class LessonService(BaseService):
             weekday: Optional[int] = None,
             do_double: bool = False
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
+        semester_service = SemesterService(self.session, self.response)
+        try:
+            semester = await semester_service.get_current()
+        except HTTPException as e:
+            if e.status_code == 404:
+                return schemas.lessons.LessonList(lessons=[])
+            else:
+                raise e
+
         lessons = await self._get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,

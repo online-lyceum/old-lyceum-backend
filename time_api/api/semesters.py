@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.semesters import SemesterService
-
+from time_api.services.auth import authenticate
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -57,6 +57,7 @@ async def get_semester(
 )
 async def create_semester(
         semester: schemas.semesters.SemesterCreate,
+        _=Depends(authenticate()),
         service: SemesterService = Depends(SemesterService)
 ):
     return await service.create(semester)
