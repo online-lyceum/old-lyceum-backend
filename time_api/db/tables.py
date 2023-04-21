@@ -9,6 +9,14 @@ from sqlalchemy import Date
 from time_api.db.base import Base
 
 
+class User(Base):
+    __tablename__ = "users"
+    user_id = Column(Integer, autoincrement=True, primary_key=True,
+                       index=True)
+    name = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+
+
 class School(Base):
     __tablename__ = "schools"
 
