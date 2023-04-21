@@ -1,6 +1,7 @@
 import logging
 import datetime as dt
 from typing import Optional, Any
+from itertools import groupby
 
 from sqlalchemy import select, exc
 from fastapi import status, HTTPException
@@ -22,12 +23,13 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int] = None,
-            do_double: bool = False
+            weekday: Optional[int | list[int]] = None,
+            do_double: bool = False,
+            group_by_weekdays: Optional[bool] = None
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         semester_service = SemesterService(self.session, self.response)
         try:
-            semester = await semester_service.get_current()
+            await semester_service.get_current()
         except HTTPException as e:
             if e.status_code == 404:
                 return schemas.lessons.LessonList(lessons=[])
@@ -38,7 +40,8 @@ class LessonService(BaseService):
             class_id=class_id,
             subgroup_id=subgroup_id,
             week=week,
-            weekday=weekday
+            weekday=weekday,
+            group_by_weekdays=group_by_weekdays
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
 
@@ -48,16 +51,17 @@ class LessonService(BaseService):
             for i, lesson in enumerate(lessons[:-1]):
                 if i in checked_indexes:
                     continue
-                if lesson['name'] == lessons[i + 1]['name']\
-                        and lesson.get('teacher_id') == lessons[i + 1].get('teacher_id') \
+                if lesson['name'] == lessons[i + 1]['name'] \
+                        and lesson.get('teacher_id') == lessons[i + 1].get(
+                    'teacher_id') \
                         and lesson['room'] == lessons[i + 1]['room']:
                     lesson['start_time'] = [
-                            lesson['start_time'],
-                            lessons[i + 1]['start_time']
+                        lesson['start_time'],
+                        lessons[i + 1]['start_time']
                     ]
                     lesson['end_time'] = [
-                            lesson['end_time'],
-                            lessons[i + 1]['end_time']
+                        lesson['end_time'],
+                        lessons[i + 1]['end_time']
                     ]
                     ret.append(schemas.lessons.DoubleLesson(**lesson))
                     checked_indexes.append(i + 1)
@@ -66,7 +70,7 @@ class LessonService(BaseService):
                     lesson['end_time'] = [lesson['end_time']]
                     ret.append(schemas.lessons.DoubleLesson(**lesson))
             return schemas.lessons.LessonListWithDouble(
-                    lessons=ret
+                lessons=ret
             )
 
         return schemas.lessons.LessonList(
@@ -93,8 +97,9 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int] = None
-    ) -> list[tables.Class]:
+            weekday: Optional[int | list[int]] = None,
+            group_by_weekdays: Optional[bool] = None
+    ) -> list[tables.Lesson] | list[list[tables.Lesson]]:
 
         query = select(tables.Lesson)
 
@@ -118,15 +123,27 @@ class LessonService(BaseService):
             )
 
         if weekday is not None:
-            query = query.filter(
-                tables.Lesson.weekday == weekday
-            )
+            if isinstance(weekday, int):
+                query = query.filter(
+                    tables.Lesson.weekday == weekday
+                )
 
         query = query.order_by(tables.Lesson.start_time)
 
         lessons = list(await self.session.scalars(query))
+
         if not lessons:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        if not group_by_weekdays:
+            return lessons
+
+        lessons_with_weekdays = [
+            (weekday, list(lessons)) for weekday, lessons in
+            groupby(lessons, lambda lesson: lesson.weekday)
+        ]
+        lessons_with_weekdays.sort(key=lambda x: x[0])
+        lessons = [lesson for _, lesson in lessons_with_weekdays]
 
 
         return lessons
@@ -223,22 +240,24 @@ class LessonService(BaseService):
             do_double: bool = False
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         weekday = dt.datetime.today().weekday()
-        for day in list(range(weekday, 7)) + list(range(0, weekday)):
-            near = await self.get_list(
-                weekday=day,
-                class_id=class_id,
-                subgroup_id=subgroup_id,
-                do_double=do_double
-            )
-            if near.lessons:
-                if weekday == near.lessons[-1].weekday:
-                    end_time = near.lessons[-1].end_time
+        nearest_days_with_lessons = await self.get_list(
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            do_double=do_double,
+            group_by_weekdays=True
+        )
+        print(nearest_days_with_lessons)
+        for lesson in nearest_days_with_lessons.lessons:
+            if lesson:
+                if weekday == lesson.weekday:
+                    end_time = lesson.end_time
                     end_time = end_time if not do_double else end_time[-1]
                     if end_time.hour < dt.datetime.now().hour \
                             or end_time.hour == dt.datetime.now().hour \
                             and end_time.minute < dt.datetime.now().minute:
                         continue
                 return near
+
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     async def get(
@@ -289,4 +308,3 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
-
