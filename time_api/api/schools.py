@@ -61,7 +61,7 @@ async def get_school(
 )
 async def delete_school(
     school_id: int,
-    _=Depends(authenticate.teacher()),
+    _=Depends(authenticate.admin()),
     service: SchoolService = Depends(SchoolService)
 ):
     return await service.delete(school_id=school_id)
