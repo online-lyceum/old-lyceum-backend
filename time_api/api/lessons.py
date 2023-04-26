@@ -105,7 +105,7 @@ async def get_nearest_lessons(
 )
 async def create_lesson(
         lesson: schemas.lessons.LessonCreate,
-        _=Depends(authenticate()),
+        _=Depends(authenticate.teacher()),
         service: LessonService = Depends(LessonService)
 ):
     return await service.create(lesson)
@@ -124,7 +124,7 @@ async def create_lesson(
 )
 async def add_subgroup_to_lesson(
         subgroup_lesson: schemas.subgroups_lessons.LessonSubgroupCreate,
-        _=Depends(authenticate()),
+        _=Depends(authenticate.teacher()),
         service: LessonService = Depends(LessonService)
 ):
     return await service.add_subgroup_to_lesson(subgroup_lesson=subgroup_lesson)

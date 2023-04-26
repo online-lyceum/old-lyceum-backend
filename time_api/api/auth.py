@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, HTTPException, Depends
 
 from time_api import schemas
 from time_api.services.classes import ClassService
@@ -20,12 +20,14 @@ router = APIRouter(
     response_model=schemas.auth.Token
 )
 async def register(
-        user: schemas.auth.CreateUser,
-        _=Depends(authenticate.admin()),
+        user: schemas.auth.User,
+        auth_data=Depends(authenticate.teacher()),
         user_service: UserService = Depends(UserService) ):
+    if auth_data.get('access_level', 0) < user.access_level:
+        raise HTTPException(status_code=401)
     await user_service.create(user_schema=user)
     return schemas.auth.Token(
-            key-authenticate.create_token(**user.dict())
+            key=authenticate.create_token(**user.dict())
         )
 
 
@@ -36,8 +38,10 @@ async def register(
 async def login(user: schemas.auth.User, user_service=Depends(UserService)):
     user_data = await user_service.get(name=user.name)
     if user_data.password == user.password:
-        return
-    # TODO: Get access_level from redis by name and password
+        return schemas.auth.Token(
+                key=authenticate.create_token(name=user.name, password=user.password)
+        )
+    raise HTTPException(status_code=401)
 
 
 @router.put(
@@ -45,5 +49,7 @@ async def login(user: schemas.auth.User, user_service=Depends(UserService)):
     response_model=schemas.auth.Token
 )
 async def refresh(token: schemas.auth.Token):
-    return authenticate.refresh_token(token=token.key)
+    return schemas.auth.Token(
+            key=authenticate.refresh_token(token_key=token.key)
+    )
 

@@ -48,34 +48,44 @@ class TokenAuth:
     def __init__(self, *args, **kwargs):
         self.token = environ.get('AUTH_TOKEN', '123456')
         self.connection = Redis(*args, **kwargs)
+        self.connection.hset(self.token,
+                mapping={"name": "admin", "password": "", "access_level": ADMIN_LEVEL})
+        self.connection.hset("teacher",
+                mapping={"name": "teacher", "password": "", "access_level": TEACHER_LEVEL})
+        self.connection.hset("monitor",
+                mapping={"name": "monitor", "password": "", "access_level": MONITOR_LEVEL})
 
     def create_token(self, name: str, password: str, 
                     access_level: int = 0):
         token_key = str(uuid4())
         with self.connection.pipeline() as pipeline:
             pipeline = pipeline.hset(token_key, 
-                    mapping={"name": user_name, "password": password, "level": access_level})
+                    mapping={"name": name, "password": password, "access_level": access_level})
             pipeline = pipeline.expire(token_key, self.EXPIRE_TIME)
             res = pipeline.execute()
         return token_key
 
     def refresh_token(self, token_key: str) -> str:
-        return self.create_user(**self.connection.hgetall(token_key))
+        return self.create_token(**self.connection.hgetall(token_key))
 
     def token_exists(self, token_key: str) -> bool:
         return self.connection.exists(token_key)
 
-    def __call__(self, access_level):
+    def __call__(self, access_level=0):
         token = self.token
         connection = self.connection
 
         def _auth(auth_token: str = Header(default='')):
-            if not token_exists(auth_token):
+            if not self.token_exists(auth_token):
                 raise HTTPException(status_code=401)
-            user_access_level = connection.hget(auth_token, 'level')
-            if user_access_level < access_level:
+            user_access_level = connection.hget(auth_token, 'access_level')
+            if int(user_access_level) < access_level:
                 raise HTTPException(status_code=401)
-            return connection.hgetall(auth_token) 
+            return dict(
+                    [((k, v) if not v.isdigit() else (k, int(v)))
+                        for k, v in connection.hgetall(auth_token).items()
+                    ]
+            )
 
         return _auth
 
@@ -89,4 +99,4 @@ class TokenAuth:
         return self(MONITOR_LEVEL)
 
 
-authenticate = TokenAuth()
+authenticate = TokenAuth(host='redis', charset="utf-8", decode_responses=True)

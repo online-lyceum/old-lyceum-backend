@@ -39,7 +39,7 @@ async def get_classes(
 )
 async def create_class(
         class_: schemas.classes.ClassCreate,
-        _ = Depends(authenticate()),
+        _ = Depends(authenticate.teacher()),
         service: ClassService = Depends(ClassService)
 ):
     return await service.create(class_)
@@ -62,6 +62,7 @@ async def get_class(
 )
 async def delete_class(
     class_id: int,
+    _ = Depends(authenticate.teacher()),
     service: ClassService = Depends(ClassService)
 ):
     return await service.delete(class_id=class_id)

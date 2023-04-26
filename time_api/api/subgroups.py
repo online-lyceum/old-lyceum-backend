@@ -43,7 +43,7 @@ async def get_subgroups(
 )
 async def create_subgroup(
         subgroup: schemas.subgroups.SubgroupCreate,
-        _=Depends(authenticate()),
+        _=Depends(authenticate.teacher()),
         service: SubgroupService = Depends(SubgroupService)
 ):
     return await service.create(subgroup)
@@ -66,6 +66,7 @@ async def get_subgroup(
 )
 async def delete_subgroup(
         subgroup_id: int,
+        _=Depends(authenticate.teacher()),
         service: SubgroupService = Depends(SubgroupService)
 ):
     return await service.delete(subgroup_id=subgroup_id)

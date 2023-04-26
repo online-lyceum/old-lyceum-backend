@@ -57,7 +57,7 @@ async def get_semester(
 )
 async def create_semester(
         semester: schemas.semesters.SemesterCreate,
-        _=Depends(authenticate()),
+        _=Depends(authenticate.teacher()),
         service: SemesterService = Depends(SemesterService)
 ):
     return await service.create(semester)
@@ -69,6 +69,7 @@ async def create_semester(
 )
 async def delete_semester(
         semester_id: int,
+        _=Depends(authenticate.teacher()),
         service: SemesterService = Depends(SemesterService)
 ):
     return await service.delete(semester_id=semester_id)

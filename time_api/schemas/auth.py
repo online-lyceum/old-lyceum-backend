@@ -6,9 +6,8 @@ class Token(BaseModel):
 
 
 class User(BaseModel):
+    """
+    :param access_level: 1 for Monitor, 2 for Teacher, 3 for Admin"""
     name: str
     password: str
-
-
-class CreateUser(User):
-    access_level: int
+    access_level: int = 0

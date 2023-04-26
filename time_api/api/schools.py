@@ -28,6 +28,7 @@ async def get_schools(
     '',
     response_model=schemas.schools.School,
     status_code=201,
+    description="Need Admin level",
     responses={
         200: {
             'model': schemas.schools.School,
@@ -37,7 +38,7 @@ async def get_schools(
 )
 async def create_school(
         school: schemas.schools.SchoolCreate,
-        _=Depends(authenticate()),
+        _=Depends(authenticate.admin()),
         service: SchoolService = Depends(SchoolService)
 ):
     return await service.create(school)
@@ -60,6 +61,7 @@ async def get_school(
 )
 async def delete_school(
     school_id: int,
+    _=Depends(authenticate.teacher()),
     service: SchoolService = Depends(SchoolService)
 ):
     return await service.delete(school_id=school_id)
