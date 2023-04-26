@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.teachers import TeacherService
+from time_api.services.auth import authenticate
 
 
 logger = logging.getLogger(__name__)
@@ -47,6 +48,7 @@ async def get_teacher(
 )
 async def create_teacher(
         teacher: schemas.teachers.TeacherCreate,
+        _=Depends(authenticate.teacher()),
         service: TeacherService = Depends(TeacherService)
 ):
     return await service.create(teacher)
@@ -58,6 +60,7 @@ async def create_teacher(
 )
 async def delete_teacher(
         teacher_id: int,
+        _=Depends(authenticate.teacher()),
         service: TeacherService = Depends(TeacherService)
 ):
     return await service.delete(teacher_id=teacher_id)
