@@ -44,7 +44,6 @@ class UserService(BaseService):
 
 class TokenAuth:
     EXPIRE_TIME = 3 * 24 * 60 * 60
-
     def __init__(self, *args, **kwargs):
         self.token = environ.get('AUTH_TOKEN', '123456')
         self.connection = Redis(*args, **kwargs)
