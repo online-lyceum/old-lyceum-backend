@@ -97,6 +97,25 @@ class Lesson(Base):
     )
 
 
+class LessonHotfix(Base):
+    """Onetime schedule change
+
+    :param is_existing: будет ли урок в этот день"""
+    __tablename__ = "lessons_hotfix"
+
+    hotfix_id = Column(Integer, autoincrement=True, primary_key=True,
+                       index=True)
+    lesson_id = Column(ForeignKey('lessons.lesson_id'), nullable=False)
+    name = Column(String, nullable=True)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    room = Column(String, nullable=True)
+    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
+                        nullable=True)
+    is_existing = Column(Boolean, nullable=True, default=True)
+    for_date = Column(Date, nullable=False)
+
+
 class LessonSubgroup(Base):
     """Отношение уроков и подгрупп. У какой подгруппы, какие уроки.
     И какие подгруппы будут на уроке."""

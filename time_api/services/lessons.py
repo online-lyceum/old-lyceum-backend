@@ -40,8 +40,7 @@ class LessonService(BaseService):
             class_id=class_id,
             subgroup_id=subgroup_id,
             week=week,
-            weekday=weekday,
-            group_by_weekdays=group_by_weekdays
+            weekday=weekday
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
 
@@ -120,8 +119,7 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int | list[int]] = None,
-            group_by_weekdays: Optional[bool] = None
+            weekday: Optional[int | list[int]] = None
     ) -> list[tables.Lesson] | list[list[tables.Lesson]]:
 
         query = select(tables.Lesson)
@@ -251,20 +249,19 @@ class LessonService(BaseService):
             subgroup_id: Optional[int] = None,
             do_double: bool = False
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
-        weekday = dt.datetime.today().weekday() - 2
+        weekday = dt.datetime.today().weekday()
         nearest_lessons = await self.get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,
             do_double=do_double,
             group_by_weekdays=True
         )
-        print(nearest_lessons)
         nearest_lessons = list(filter(lambda i: i.lessons and i.lessons[0].weekday >= weekday, 
                                       nearest_lessons)) + \
                           list(filter(lambda i: i.lessons and i.lessons[0].weekday < weekday,
                                       nearest_lessons))
+        ret = None
         for group in nearest_lessons:
-            print(*group, sep="\n\n")
             if group.lessons:
                 if weekday == group.lessons[0].weekday:
                     end_time = group.lessons[-1].end_time
@@ -273,9 +270,31 @@ class LessonService(BaseService):
                             or end_time.hour == dt.datetime.now().hour \
                             and end_time.minute < dt.datetime.now().minute:
                         continue
-                return group
+                ret = group
+                break
 
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        if not ret:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        lessons_day = dt.date.today() + \
+                dt.timedelta(days=(ret.lessons[0].weekday - dt.date.today().weekday()) % 7)
+        hotfixes = await self.get_hotfix(for_date=lessons_day)
+        if hotfixes:  # TODO: Add support for DoubleLesson
+            for lesson in ret.lessons.copy():
+                if lesson.lesson_id in [hf['lesson_id'] for hf in hotfixes]:
+                    lesson_hotfixes = [hf for hf in hotfixes if hf['lesson_id'] == lesson.lesson_id]
+                    index = ret.lessons.index(lesson)
+                    lesson = lesson.dict()
+                    existing = True
+                    for hotfix in lesson_hotfixes:
+                        existing = hotfix.pop('is_existing')
+                        lesson = lesson | hotfix
+                    if not existing:
+                        ret.lessons.pop(index)
+                    else:
+                        ret.lessons[index] = schemas.lessons.Lesson(**lesson)
+
+        return ret 
 
     async def get(
             self, *,
@@ -325,3 +344,29 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
+
+    async def create_hotfix(self, hotfix_schema: schemas.lessons.LessonHotfix):
+        hotfix_schema = hotfix_schema.dict()
+        hotfix_schema['for_date'] = dt.date(**hotfix_schema['for_date'])
+        hotfix = tables.LessonHotfix(**hotfix_schema)
+        self.session.add(hotfix)
+        await self.session.commit()
+        return hotfix
+
+    async def get_hotfix(
+            self, 
+            lesson_id: int = None, 
+            for_date: dt.date = None
+) -> list[dict[str, Any]]:
+        query = select(tables.LessonHotfix)
+        if lesson_id is not None:
+            query = query.filter_by(lesson_id=lesson_id)
+        if for_date is not None:
+            query = query.filter_by(for_date=for_date)
+
+        hotfixes = await self.session.scalars(query)
+        exclude = ('_sa_instance_state', 'hotfix_id', 'for_date')
+        hotfixes = [dict([(k, v) for k, v in hf.__dict__.items() 
+            if v is not None and k not in exclude]) for hf in hotfixes]
+        return hotfixes
+
