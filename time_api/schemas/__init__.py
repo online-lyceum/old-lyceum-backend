@@ -7,5 +7,6 @@ from . import (
     teachers,
     times,
     messages,
-    semesters
+    semesters,
+    auth
 )

@@ -6,7 +6,16 @@ from sqlalchemy import Boolean
 from sqlalchemy import ForeignKey
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import Date
-from time_api.db.base import Base
+from .base import Base
+
+
+class User(Base):
+    __tablename__ = "users"
+    user_id = Column(Integer, autoincrement=True, primary_key=True,
+                       index=True)
+    name = Column(String, nullable=False, unique=True)
+    password = Column(String, nullable=False)
+    access_level = Column(Integer, nullable=False, default=0)
 
 
 class School(Base):
@@ -86,6 +95,25 @@ class Lesson(Base):
             'teacher_id'
         ),
     )
+
+
+class LessonHotfix(Base):
+    """Onetime schedule change
+
+    :param is_existing: будет ли урок в этот день"""
+    __tablename__ = "lessons_hotfix"
+
+    hotfix_id = Column(Integer, autoincrement=True, primary_key=True,
+                       index=True)
+    lesson_id = Column(ForeignKey('lessons.lesson_id'), nullable=False)
+    name = Column(String, nullable=True)
+    start_time = Column(Time, nullable=True)
+    end_time = Column(Time, nullable=True)
+    room = Column(String, nullable=True)
+    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'),
+                        nullable=True)
+    is_existing = Column(Boolean, nullable=True, default=True)
+    for_date = Column(Date, nullable=False)
 
 
 class LessonSubgroup(Base):

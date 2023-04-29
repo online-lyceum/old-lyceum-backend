@@ -2,7 +2,7 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
-from .times import Time
+from .times import Time, Date
 from .teachers import Teacher
 
 
@@ -53,3 +53,18 @@ class DayLessonList(LessonList):
     is_today: bool
     weekday: Optional[int]
     week: int
+
+
+class LessonHotfix(BaseModel):
+    """Onetime schedule change
+
+    :param is_existing: будет ли урок в этот день"""
+    lesson_id: int
+    name: Optional[str]
+    start_time: Optional[Time]
+    end_time: Optional[Time]
+    room: Optional[str]
+    teacher_id: Optional[int]
+    is_existing: Optional[bool] = True 
+    for_date: Date
+

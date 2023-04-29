@@ -18,6 +18,11 @@ services:
       - .variables.env
     networks:
       default:
+  redis:
+    image: redis
+    restart: always
+    networks:
+      default:
 
 networks:
   front_net:

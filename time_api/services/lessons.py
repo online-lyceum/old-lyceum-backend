@@ -1,6 +1,7 @@
 import logging
 import datetime as dt
 from typing import Optional, Any
+from itertools import groupby
 
 from sqlalchemy import select, exc
 from fastapi import status, HTTPException
@@ -10,6 +11,7 @@ from time_api.db import tables
 from time_api.schemas.lessons import LessonCreate, Lesson
 from time_api import schemas
 from time_api.services.teachers import TeacherService
+from time_api.services.semesters import SemesterService
 
 logger = logging.getLogger(__name__)
 
@@ -21,9 +23,19 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int] = None,
-            do_double: bool = False
+            weekday: Optional[int | list[int]] = None,
+            do_double: bool = False,
+            group_by_weekdays: Optional[bool] = None
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
+        semester_service = SemesterService(self.session, self.response)
+        try:
+            await semester_service.get_current()
+        except HTTPException as e:
+            if e.status_code == 404:
+                return schemas.lessons.LessonList(lessons=[])
+            else:
+                raise e
+
         lessons = await self._get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,
@@ -32,36 +44,60 @@ class LessonService(BaseService):
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
 
-        if do_double:  # Check for double lesson
-            ret = []
-            checked_indexes = []
-            for i, lesson in enumerate(lessons[:-1]):
-                if i in checked_indexes:
-                    continue
-                if lesson['name'] == lessons[i + 1]['name']\
-                        and lesson.get('teacher_id') == lessons[i + 1].get('teacher_id') \
-                        and lesson['room'] == lessons[i + 1]['room']:
-                    lesson['start_time'] = [
-                            lesson['start_time'],
-                            lessons[i + 1]['start_time']
-                    ]
-                    lesson['end_time'] = [
-                            lesson['end_time'],
-                            lessons[i + 1]['end_time']
-                    ]
-                    ret.append(schemas.lessons.DoubleLesson(**lesson))
-                    checked_indexes.append(i + 1)
-                else:
-                    lesson['start_time'] = [lesson['start_time']]
-                    lesson['end_time'] = [lesson['end_time']]
-                    ret.append(schemas.lessons.DoubleLesson(**lesson))
+        if group_by_weekdays:
+            lessons.sort(key=lambda i: i['weekday'])
+
+            lessons_with_weekdays = [
+                (weekday, list(lessons)) for weekday, lessons in
+                groupby(lessons, lambda lesson: lesson['weekday'])
+            ]
+            lessons_with_weekdays.sort(key=lambda x: x[0])
+            lessons = [lesson for _, lesson in lessons_with_weekdays]
+
+        if do_double and lessons:  # Check for double lesson
+            if isinstance(lessons[0], list):
+                return [schemas.lessons.LessonListWithDouble(
+                            lessons=self._double_lessons(group)
+                        ) for group in lessons]
             return schemas.lessons.LessonListWithDouble(
-                    lessons=ret
+                lessons=self._double_lessons(lessons)
             )
 
+        if lessons and isinstance(lessons[0], list):
+            return [schemas.lessons.LessonList(lessons=group) for group in lessons]
         return schemas.lessons.LessonList(
             lessons=lessons
         )
+
+    def _double_lessons(
+            self,
+            lessons: list[tables.Lesson]
+    ) -> list[schemas.lessons.DoubleLesson]:
+        ret = []
+        checked_indexes = []
+        for i, lesson in enumerate(lessons[:-1]):
+            if i in checked_indexes:
+                continue
+            if lesson['name'] == lessons[i + 1]['name'] \
+                    and lesson.get('teacher_id') == lessons[i + 1].get(
+                'teacher_id') \
+                    and lesson['room'] == lessons[i + 1]['room']:
+                lesson['start_time'] = [
+                    lesson['start_time'],
+                    lessons[i + 1]['start_time']
+                ]
+                lesson['end_time'] = [
+                    lesson['end_time'],
+                    lessons[i + 1]['end_time']
+                ]
+                ret.append(schemas.lessons.DoubleLesson(**lesson))
+                checked_indexes.append(i + 1)
+            else:
+                lesson['start_time'] = [lesson['start_time']]
+                lesson['end_time'] = [lesson['end_time']]
+                ret.append(schemas.lessons.DoubleLesson(**lesson))
+        return ret
+
 
     async def _add_teacher(
             self,
@@ -83,8 +119,8 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int] = None
-    ) -> list[tables.Class]:
+            weekday: Optional[int | list[int]] = None
+    ) -> list[tables.Lesson] | list[list[tables.Lesson]]:
 
         query = select(tables.Lesson)
 
@@ -108,16 +144,17 @@ class LessonService(BaseService):
             )
 
         if weekday is not None:
-            query = query.filter(
-                tables.Lesson.weekday == weekday
-            )
+            if isinstance(weekday, int):
+                query = query.filter(
+                    tables.Lesson.weekday == weekday
+                )
 
         query = query.order_by(tables.Lesson.start_time)
 
         lessons = list(await self.session.scalars(query))
+
         if not lessons:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
 
         return lessons
 
@@ -213,23 +250,51 @@ class LessonService(BaseService):
             do_double: bool = False
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         weekday = dt.datetime.today().weekday()
-        for day in list(range(weekday, 7)) + list(range(0, weekday)):
-            near = await self.get_list(
-                weekday=day,
-                class_id=class_id,
-                subgroup_id=subgroup_id,
-                do_double=do_double
-            )
-            if near.lessons:
-                if weekday == near.lessons[-1].weekday:
-                    end_time = near.lessons[-1].end_time
+        nearest_lessons = await self.get_list(
+            class_id=class_id,
+            subgroup_id=subgroup_id,
+            do_double=do_double,
+            group_by_weekdays=True
+        )
+        nearest_lessons = list(filter(lambda i: i.lessons and i.lessons[0].weekday >= weekday, 
+                                      nearest_lessons)) + \
+                          list(filter(lambda i: i.lessons and i.lessons[0].weekday < weekday,
+                                      nearest_lessons))
+        ret = None
+        for group in nearest_lessons:
+            if group.lessons:
+                if weekday == group.lessons[0].weekday:
+                    end_time = group.lessons[-1].end_time
                     end_time = end_time if not do_double else end_time[-1]
                     if end_time.hour < dt.datetime.now().hour \
                             or end_time.hour == dt.datetime.now().hour \
                             and end_time.minute < dt.datetime.now().minute:
                         continue
-                return near
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+                ret = group
+                break
+
+        if not ret:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+        lessons_day = dt.date.today() + \
+                dt.timedelta(days=(ret.lessons[0].weekday - dt.date.today().weekday()) % 7)
+        hotfixes = await self.get_hotfix(for_date=lessons_day)
+        if hotfixes:  # TODO: Add support for DoubleLesson
+            for lesson in ret.lessons.copy():
+                if lesson.lesson_id in [hf['lesson_id'] for hf in hotfixes]:
+                    lesson_hotfixes = [hf for hf in hotfixes if hf['lesson_id'] == lesson.lesson_id]
+                    index = ret.lessons.index(lesson)
+                    lesson = lesson.dict()
+                    existing = True
+                    for hotfix in lesson_hotfixes:
+                        existing = hotfix.pop('is_existing')
+                        lesson = lesson | hotfix
+                    if not existing:
+                        ret.lessons.pop(index)
+                    else:
+                        ret.lessons[index] = schemas.lessons.Lesson(**lesson)
+
+        return ret 
 
     async def get(
             self, *,
@@ -279,4 +344,29 @@ class LessonService(BaseService):
                 **subgroup_lesson.dict()
             )
         return new_lesson_subgroup
+
+    async def create_hotfix(self, hotfix_schema: schemas.lessons.LessonHotfix):
+        hotfix_schema = hotfix_schema.dict()
+        hotfix_schema['for_date'] = dt.date(**hotfix_schema['for_date'])
+        hotfix = tables.LessonHotfix(**hotfix_schema)
+        self.session.add(hotfix)
+        await self.session.commit()
+        return hotfix
+
+    async def get_hotfix(
+            self, 
+            lesson_id: int = None, 
+            for_date: dt.date = None
+) -> list[dict[str, Any]]:
+        query = select(tables.LessonHotfix)
+        if lesson_id is not None:
+            query = query.filter_by(lesson_id=lesson_id)
+        if for_date is not None:
+            query = query.filter_by(for_date=for_date)
+
+        hotfixes = await self.session.scalars(query)
+        exclude = ('_sa_instance_state', 'hotfix_id', 'for_date')
+        hotfixes = [dict([(k, v) for k, v in hf.__dict__.items() 
+            if v is not None and k not in exclude]) for hf in hotfixes]
+        return hotfixes
 

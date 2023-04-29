@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 
 from time_api import schemas
 from time_api.services.lessons import LessonService
+from time_api.services.auth import authenticate
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -104,6 +105,7 @@ async def get_nearest_lessons(
 )
 async def create_lesson(
         lesson: schemas.lessons.LessonCreate,
+        _=Depends(authenticate.teacher()),
         service: LessonService = Depends(LessonService)
 ):
     return await service.create(lesson)
@@ -122,6 +124,19 @@ async def create_lesson(
 )
 async def add_subgroup_to_lesson(
         subgroup_lesson: schemas.subgroups_lessons.LessonSubgroupCreate,
+        _=Depends(authenticate.teacher()),
         service: LessonService = Depends(LessonService)
 ):
     return await service.add_subgroup_to_lesson(subgroup_lesson=subgroup_lesson)
+
+
+@router.post(
+    '/hotfix',
+    status_code=201
+)
+async def add_lesson_hotfix(
+        lesson_hotfix: schemas.lessons.LessonHotfix,
+        _=Depends(authenticate.monitor()),
+        service: LessonService = Depends(LessonService)
+):
+    return await service.create_hotfix(lesson_hotfix)
