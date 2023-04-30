@@ -105,7 +105,7 @@ class LessonHotfix(Base):
 
     hotfix_id = Column(Integer, autoincrement=True, primary_key=True,
                        index=True)
-    lesson_id = Column(ForeignKey('lessons.lesson_id'), nullable=False)
+    lesson_id = Column(ForeignKey('lessons.lesson_id'), nullable=True)
     name = Column(String, nullable=True)
     start_time = Column(Time, nullable=True)
     end_time = Column(Time, nullable=True)
