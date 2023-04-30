@@ -74,7 +74,7 @@ class TokenAuth:
         token = self.token
         connection = self.connection
 
-        def _auth(auth_token: str = Header(default='')):
+        def _auth(auth_token: str = Header(default='')) -> dict:
             if not self.token_exists(auth_token):
                 raise HTTPException(status_code=401)
             user_access_level = connection.hget(auth_token, 'access_level')

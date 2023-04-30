@@ -34,6 +34,7 @@ class Lesson(InternalLesson):
 class DoubleLesson(Lesson):
     start_time: list[Time]
     end_time: list[Time]
+    lesson_id: list[int]
 
 
 class LessonList(BaseModel):
@@ -59,7 +60,7 @@ class LessonHotfix(BaseModel):
     """Onetime schedule change
 
     :param is_existing: будет ли урок в этот день"""
-    lesson_id: int
+    lesson_id: Optional[int]
     name: Optional[str]
     start_time: Optional[Time]
     end_time: Optional[Time]
