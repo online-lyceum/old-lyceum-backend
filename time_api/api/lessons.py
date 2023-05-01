@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from time_api import schemas
 from time_api.services.lessons import LessonService
 from time_api.services.lessons_hotfix import LessonHotfixService
-from time_api.services.auth import authenticate, TEACHER_LEVEL
+from time_api.services.auth import authenticate, AccessLevel 
 
 logger = logging.getLogger(__name__)
 router = APIRouter(
@@ -137,10 +137,11 @@ async def add_subgroup_to_lesson(
         Create hotfix for day or lesson in day
         If is_existing is False and lesson_id is None, cancel all lessons at for_day
     """,
-    status_code=201
+    status_code=201,
+    response_model=schemas.lessons.LessonHotfix
 )
 async def add_lesson_hotfix(
-        lesson_hotfix: schemas.lessons.LessonHotfix,
+        lesson_hotfix: schemas.lessons.LessonHotfixCreate,
         auth_data=Depends(authenticate.monitor()),
         service: LessonHotfixService = Depends(LessonHotfixService)
 ):
@@ -148,7 +149,7 @@ async def add_lesson_hotfix(
     :param lesson_hotfix: If is_existing is False and lesson_id is None, cancel all lessons at for_day
     """
     if not lesson_hotfix.is_existing and lesson_hotfix.lesson_id is None:
-        if auth_data.get('access_level', 0) < TEACHER_LEVEL:
+        if auth_data.get('access_level', AccessLevel.unauthorized) < AccessLevel.teacher:
             raise HTTPException(status_code=401)
     return await service.create(lesson_hotfix)
 

@@ -56,7 +56,7 @@ class DayLessonList(LessonList):
     week: int
 
 
-class LessonHotfix(BaseModel):
+class LessonHotfixCreate(BaseModel):
     """Onetime schedule change
 
     :param is_existing: будет ли урок в этот день"""
@@ -69,3 +69,8 @@ class LessonHotfix(BaseModel):
     is_existing: Optional[bool] = True 
     for_date: Date
 
+
+class LessonHotfix(BaseModel):
+    is_existing: bool = True 
+    for_date: Date
+    hotfix_id: int

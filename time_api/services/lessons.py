@@ -280,7 +280,8 @@ class LessonService(BaseService):
                 ret = group
                 break
 
-        if not ret.lessons:
+        print(ret, ret.lessons)
+        if ret is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
         hotfix_service = LessonHotfixService(self.session, self.response)
