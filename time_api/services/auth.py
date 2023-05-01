@@ -2,6 +2,7 @@ from fastapi import Header, HTTPException
 from os import environ
 from redis import Redis
 from uuid import uuid4
+from enum import IntEnum
 
 import logging
 
@@ -14,9 +15,12 @@ from time_api.db import tables
 
 logger = logging.getLogger(__name__)
 
-ADMIN_LEVEL = 3
-TEACHER_LEVEL = 2
-MONITOR_LEVEL = 1
+
+class AccessLevel(IntEnum):
+    admin = 3
+    teacher = 2
+    monitor = 1
+    unauthorized = 0
 
 
 class UserService(BaseService):
@@ -48,14 +52,16 @@ class TokenAuth:
         self.token = environ.get('AUTH_TOKEN', '123456')
         self.connection = Redis(*args, **kwargs)
         self.connection.hset(self.token,
-                mapping={"name": "admin", "password": "", "access_level": ADMIN_LEVEL})
+                mapping={"name": "admin", "password": "", "access_level": AccessLevel.admin})
         self.connection.hset("teacher",
-                mapping={"name": "teacher", "password": "", "access_level": TEACHER_LEVEL})
+                mapping={"name": "teacher", "password": "", "access_level": AccessLevel.teacher})
         self.connection.hset("monitor",
-                mapping={"name": "monitor", "password": "", "access_level": MONITOR_LEVEL})
+                mapping={"name": "monitor", "password": "", "access_level": AccessLevel.monitor})
 
     def create_token(self, name: str, password: str, 
-                    access_level: int = 0):
+                    access_level: int = AccessLevel.unauthorized):
+        if access_level not in AccessLevel:
+            raise ValueError("invalid access_level")
         token_key = str(uuid4())
         with self.connection.pipeline() as pipeline:
             pipeline = pipeline.hset(token_key, 
@@ -70,7 +76,7 @@ class TokenAuth:
     def token_exists(self, token_key: str) -> bool:
         return self.connection.exists(token_key)
 
-    def __call__(self, access_level=0):
+    def __call__(self, access_level=AccessLevel.unauthorized):
         token = self.token
         connection = self.connection
 
@@ -89,13 +95,13 @@ class TokenAuth:
         return _auth
 
     def admin(self):
-        return self(ADMIN_LEVEL)
+        return self(AccessLevel.admin)
 
     def teacher(self):
-        return self(TEACHER_LEVEL)
+        return self(AccessLevel.teacher)
 
     def monitor(self):
-        return self(MONITOR_LEVEL)
+        return self(AccessLevel.monitor)
 
 
 authenticate = TokenAuth(host='redis', charset="utf-8", decode_responses=True)
