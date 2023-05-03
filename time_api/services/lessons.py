@@ -74,37 +74,36 @@ class LessonService(BaseService):
             self,
             lessons: list
     ) -> list[schemas.lessons.DoubleLesson]:
-        if all([isinstance(lesson, schemas.lessons.Lesson) for lesson in lessons]):
-            lessons = [lesson.dict() for lesson in lessons]
-        ret = []
+        if any([isinstance(lesson, schemas.lessons.Lesson) for lesson in lessons]):
+            lessons = [dict(lesson) for lesson in lessons]
         checked_indexes = []
-        for i, lesson in enumerate(lessons):
+        for i in range(len(lessons)):
             if i in checked_indexes:
                 continue
-            if i < len(lessons) - 1 and lesson['name'] == lessons[i + 1]['name'] \
-                    and lesson.get('teacher_id') == lessons[i + 1].get(
-                'teacher_id') \
-                    and lesson['room'] == lessons[i + 1]['room']:
-                lesson['start_time'] = [
-                    lesson['start_time'],
+            if i < len(lessons) - 1 \
+                    and lessons[i]['name'] == lessons[i + 1]['name'] \
+                    and lessons[i].get('teacher_id') == lessons[i + 1].get('teacher_id') \
+                    and lessons[i]['room'] == lessons[i + 1]['room']:
+                lessons[i]['start_time'] = [
+                    lessons[i]['start_time'],
                     lessons[i + 1]['start_time']
                 ]
-                lesson['end_time'] = [
-                    lesson['end_time'],
+                lessons[i]['end_time'] = [
+                    lessons[i]['end_time'],
                     lessons[i + 1]['end_time']
                 ]
-                lesson['lesson_id'] = [
-                        lesson['lesson_id'], 
+                lessons[i]['lesson_id'] = [
+                        lessons[i]['lesson_id'], 
                         lessons[i + 1]['lesson_id']
                 ]
-                ret.append(schemas.lessons.DoubleLesson(**lesson))
                 checked_indexes.append(i + 1)
             else:
-                lesson['start_time'] = [lesson['start_time']]
-                lesson['end_time'] = [lesson['end_time']]
-                lesson['lesson_id'] = [lesson['lesson_id']]
-                ret.append(schemas.lessons.DoubleLesson(**lesson))
-        return ret
+                lessons[i]['start_time'] = [lessons[i]['start_time']]
+                lessons[i]['end_time'] = [lessons[i]['end_time']]
+                lessons[i]['lesson_id'] = [lessons[i]['lesson_id']]
+        for i in sorted(checked_indexes, reverse=True):
+            del lessons[i]
+        return lessons 
 
     async def _add_teacher(
             self,
@@ -280,7 +279,6 @@ class LessonService(BaseService):
                 ret = group
                 break
 
-        print(ret, ret.lessons)
         if ret is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 

@@ -10,7 +10,7 @@ class BaseLesson(BaseModel):
     name: str
     start_time: Time
     end_time: Time
-    week: Optional[bool] = None
+    week: None | bool = None
     weekday: int = Field(0, ge=0, le=6)
     room: str
     school_id: int
@@ -52,7 +52,7 @@ class LessonListWithWeekday(BaseModel):
 
 class DayLessonList(LessonList):
     is_today: bool
-    weekday: Optional[int]
+    weekday: None | int
     week: int
 
 
@@ -60,13 +60,14 @@ class LessonHotfixCreate(BaseModel):
     """Onetime schedule change
 
     :param is_existing: будет ли урок в этот день"""
-    lesson_id: Optional[int]
-    name: Optional[str]
-    start_time: Optional[Time]
-    end_time: Optional[Time]
-    room: Optional[str]
-    teacher_id: Optional[int]
-    is_existing: Optional[bool] = True 
+    lesson_id: None | int
+    name: None | str
+    start_time: None | Time
+    end_time: None | Time
+    room: None | str
+    teacher_id: None | int
+    is_existing: None | bool = True
+    school_id: int | None
     for_date: Date
 
 
@@ -74,3 +75,8 @@ class LessonHotfix(BaseModel):
     is_existing: bool = True 
     for_date: Date
     hotfix_id: int
+
+    class Config:
+        orm_mode = True
+
+
