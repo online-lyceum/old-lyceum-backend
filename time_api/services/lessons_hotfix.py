@@ -43,7 +43,7 @@ class LessonHotfixService(BaseService):
 
         hotfixes = await self.session.scalars(query)
         exclude = ('_sa_instance_state', 'hotfix_id', 'for_date')
-        hotfixes = [dict([(key, value) for key, vvalue in hotfix.__dict__.items() 
+        hotfixes = [dict([(key, value) for key, value in hotfix.__dict__.items() 
             if value is not None and key not in exclude]) for hotfix in hotfixes]
         return hotfixes
 
@@ -51,14 +51,14 @@ class LessonHotfixService(BaseService):
             self,
             lessons_list: schemas.lessons.LessonList
     ):
-        """
-        Raise http 404 if has hotfix for not exist lessons for day"""
         lessons_day = dt.date.today()
         days_to_lessons_day = (lessons_list.lessons[0].weekday - dt.date.today().weekday()) % 7
         lessons_day += dt.timedelta(days=days_to_lessons_day)
         hotfixes = await self.get_state(for_date=lessons_day)
         if hotfixes:
-            if any([hf.get('lesson_id') is None and not hf['is_existing'] for hf in hotfixes]):
+            if any([hf.get('lesson_id') is None and not hf['is_existing'] \
+                        and hf.get('school_id') == lessons_list.lessons[0].school_id
+                    for hf in hotfixes]):
                 return schemas.lessons.LessonList(lessons=[])
             lessons = []
             for lesson in lessons_list.lessons:

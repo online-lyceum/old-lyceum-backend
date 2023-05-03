@@ -4,7 +4,7 @@ from redis import Redis
 from uuid import uuid4
 from enum import IntEnum
 
-import logging
+from loguru import logger
 
 from sqlalchemy import select, exc
 
@@ -13,13 +13,10 @@ from time_api import schemas
 from time_api.db import tables
 
 
-logger = logging.getLogger(__name__)
-
-
 class AccessLevel(IntEnum):
     admin = 3
     teacher = 2
-    monitor = 1
+    class_president = 1
     unauthorized = 0
 
 
@@ -49,18 +46,18 @@ class UserService(BaseService):
 class TokenAuth:
     EXPIRE_TIME = 3 * 24 * 60 * 60
     def __init__(self, *args, **kwargs):
-        self.token = environ.get('AUTH_TOKEN', '123456')
         self.connection = Redis(*args, **kwargs)
-        self.connection.hset(self.token,
-                mapping={"name": "admin", "password": "", "access_level": AccessLevel.admin})
-        self.connection.hset("teacher",
-                mapping={"name": "teacher", "password": "", "access_level": AccessLevel.teacher})
-        self.connection.hset("monitor",
-                mapping={"name": "monitor", "password": "", "access_level": AccessLevel.monitor})
+        if environ.get('ADMIN_TOKEN') and environ.get('ADMIN_PASSWORD'):
+            logger.debug("Create admin account")
+            self.connection.hset(environ.get('ADMIN_TOKEN'),
+                    mapping={"name": "admin", "password": environ.get('ADMIN_PASSWORD'),
+                             "access_level": AccessLevel.admin.value})
 
     def create_token(self, name: str, password: str, 
-                    access_level: int = AccessLevel.unauthorized):
-        if access_level not in AccessLevel:
+                    access_level: int = AccessLevel.unauthorized.value):
+        if isinstance(access_level, str) and access_level.isdigit():
+            access_level = int(access_level)
+        if access_level not in range(min(AccessLevel), max(AccessLevel) + 1):
             raise ValueError("invalid access_level")
         token_key = str(uuid4())
         with self.connection.pipeline() as pipeline:
@@ -71,20 +68,20 @@ class TokenAuth:
         return token_key
 
     def refresh_token(self, token_key: str) -> str:
+        print(self.connection.hgetall(token_key))
         return self.create_token(**self.connection.hgetall(token_key))
 
     def token_exists(self, token_key: str) -> bool:
         return self.connection.exists(token_key)
 
     def __call__(self, access_level=AccessLevel.unauthorized):
-        token = self.token
         connection = self.connection
 
         def _auth(auth_token: str = Header(default='')) -> dict:
             if not self.token_exists(auth_token):
                 raise HTTPException(status_code=401)
             user_access_level = connection.hget(auth_token, 'access_level')
-            if int(user_access_level) < access_level:
+            if int(user_access_level) < access_level.value:
                 raise HTTPException(status_code=401)
             return dict(
                     [((k, v) if not v.isdigit() else (k, int(v)))
@@ -100,8 +97,8 @@ class TokenAuth:
     def teacher(self):
         return self(AccessLevel.teacher)
 
-    def monitor(self):
-        return self(AccessLevel.monitor)
+    def class_president(self):
+        return self(AccessLevel.class_president)
 
 
 authenticate = TokenAuth(host='redis', charset="utf-8", decode_responses=True)

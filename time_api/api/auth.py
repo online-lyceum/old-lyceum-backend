@@ -20,7 +20,7 @@ router = APIRouter(
     response_model=schemas.auth.Token
 )
 async def register(
-        user: schemas.auth.User,
+        user: schemas.auth.UserCreate,
         auth_data=Depends(authenticate.teacher()),
         user_service: UserService = Depends(UserService) ):
     if auth_data.get('access_level', 0) < user.access_level:

@@ -114,6 +114,7 @@ class LessonHotfix(Base):
                         nullable=True)
     is_existing = Column(Boolean, nullable=True, default=True)
     for_date = Column(Date, nullable=False)
+    school_id = Column(Integer, nullable=True)
 
 
 class LessonSubgroup(Base):

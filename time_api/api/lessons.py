@@ -1,5 +1,5 @@
-import logging
 from typing import Optional, Union 
+from loguru import logger
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -8,7 +8,6 @@ from time_api.services.lessons import LessonService
 from time_api.services.lessons_hotfix import LessonHotfixService
 from time_api.services.auth import authenticate, AccessLevel 
 
-logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix='/api/lessons',
     tags=['Lessons'],
@@ -136,19 +135,22 @@ async def add_subgroup_to_lesson(
     description="""
         Create hotfix for day or lesson in day
         If is_existing is False and lesson_id is None, cancel all lessons at for_day
+        and require field school_id.
+        
+        school_id: enter only if you cancel all lessons at for_day
     """,
     status_code=201,
     response_model=schemas.lessons.LessonHotfix
 )
 async def add_lesson_hotfix(
         lesson_hotfix: schemas.lessons.LessonHotfixCreate,
-        auth_data=Depends(authenticate.monitor()),
+        auth_data=Depends(authenticate.class_president()),
         service: LessonHotfixService = Depends(LessonHotfixService)
 ):
-    """
-    :param lesson_hotfix: If is_existing is False and lesson_id is None, cancel all lessons at for_day
-    """
+    # TODO Check existing school_id and lesson_id
     if not lesson_hotfix.is_existing and lesson_hotfix.lesson_id is None:
+        if lesson_hotfix.school_id is None:
+            raise HTTPException(status_code=422, detail="Require school_id")
         if auth_data.get('access_level', AccessLevel.unauthorized) < AccessLevel.teacher:
             raise HTTPException(status_code=401)
     return await service.create(lesson_hotfix)
@@ -160,7 +162,7 @@ async def add_lesson_hotfix(
 )
 async def delete_lesson_hotfix(
         hotfix_id: int,
-        _=Depends(authenticate.monitor()),
+        _=Depends(authenticate.class_president()),
         service: LessonHotfixService = Depends(LessonHotfixService)
 ):
     return await service.delete(hotfix_id)
