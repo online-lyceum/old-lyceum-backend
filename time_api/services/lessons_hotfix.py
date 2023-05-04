@@ -67,7 +67,7 @@ class LessonHotfixService(BaseService):
                     lesson_hotfixes = [hf for hf in hotfixes if hf['lesson_id'] == lesson.lesson_id]
                     lesson = lesson.dict()
                     for hotfix in lesson_hotfixes:
-                        existing = hotfix.pop('is_existing')
+                        existing = hotfix.pop('is_existing', True)
                         lesson = lesson | hotfix
                     lesson = schemas.lessons.Lesson(**lesson)
                 if existing:
