@@ -27,20 +27,24 @@ async def register(
         raise HTTPException(status_code=401)
     await user_service.create(user_schema=user)
     return schemas.auth.Token(
-            key=authenticate.create_token(**user.dict())
+            key=authenticate.create_token(name=user.name, password=user.password,
+                access_level=user.access_level)
         )
 
 
 @router.post(
     '/login',
-    response_model=schemas.auth.Token
+    response_model=schemas.auth.UserInfo
 )
 async def login(user: schemas.auth.User, user_service=Depends(UserService)):
-    user_data = await user_service.get(name=user.name)
-    if user_data.password == user.password:
-        return schemas.auth.Token(
-                key=authenticate.create_token(name=user.name, password=user.password)
-        )
+    data = await user_service.get(name=user.name)
+    user_data = schemas.auth.UserInfo.from_orm(data)
+    user_data.token = schemas.auth.Token(
+            key=authenticate.create_token(name=user.name, password=user.password,
+                access_level=user_data.access_level)
+    )
+    if data.password == user.password:
+        return user_data 
     raise HTTPException(status_code=401)
 
 
@@ -52,4 +56,19 @@ async def refresh(token: schemas.auth.Token):
     return schemas.auth.Token(
             key=authenticate.refresh_token(token_key=token.key)
     )
+
+
+
+@router.get(
+    '/info',
+    response_model=schemas.auth.UserInfo
+)
+async def get_user_info(
+        token: str | None = None,
+        service: UserService = Depends(UserService)
+    ):
+    name = authenticate.get_info_by_token(token)['name']
+    user = await service.get(name)
+    print(user)
+    return user
 

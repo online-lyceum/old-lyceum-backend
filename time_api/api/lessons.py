@@ -26,6 +26,7 @@ router = APIRouter(
 async def get_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
+        teacher_id: int | None = None,
         weekday: Optional[int] = None,
         do_double: Optional[bool] = False,
         service: LessonService = Depends(LessonService)
@@ -34,7 +35,8 @@ async def get_lessons(
         class_id=class_id,
         weekday=weekday,
         subgroup_id=subgroup_id,
-        do_double=do_double
+        do_double=do_double,
+        teacher_id=teacher_id
     )
 
 
@@ -82,13 +84,15 @@ async def get_weekday_lessons(
 async def get_nearest_lessons(
         subgroup_id: Optional[int] = None,
         class_id: Optional[int] = None,
+        teacher_id: int | None = None,
         do_double: bool = False,
         service: LessonService = Depends(LessonService)
 ):
     return await service.get_nearest_list(
         class_id=class_id,
         subgroup_id=subgroup_id,
-        do_double=do_double
+        do_double=do_double,
+        teacher_id=teacher_id
     )
 
 

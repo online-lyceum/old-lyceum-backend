@@ -23,9 +23,12 @@ class AccessLevel(IntEnum):
 class UserService(BaseService):
     async def create(
             self,
-            user_schema: schemas.auth.User
+            user_schema: schemas.auth.UserCreate
     ):
-        new_user = tables.User(**user_schema.dict())
+        user_schema = user_schema.dict()
+        if 'token' in user_schema.keys():
+            user_schema.pop('token')
+        new_user = tables.User(**user_schema)
         try:
             self.session.add(new_user)
             await self.session.commit()
@@ -68,11 +71,13 @@ class TokenAuth:
         return token_key
 
     def refresh_token(self, token_key: str) -> str:
-        print(self.connection.hgetall(token_key))
         return self.create_token(**self.connection.hgetall(token_key))
 
     def token_exists(self, token_key: str) -> bool:
         return self.connection.exists(token_key)
+
+    def get_info_by_token(self, token_key: str) -> dict:
+        return self.connection.hgetall(token_key)
 
     def __call__(self, access_level=AccessLevel.unauthorized):
         connection = self.connection
