@@ -26,7 +26,8 @@ class LessonService(BaseService):
             week: Optional[bool] = None,
             weekday: Optional[int | list[int]] = None,
             do_double: bool = False,
-            group_by_weekdays: Optional[bool] = None
+            group_by_weekdays: Optional[bool] = None,
+            teacher_id: int | None = None
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
         semester_service = SemesterService(self.session, self.response)
         try:
@@ -41,7 +42,8 @@ class LessonService(BaseService):
             class_id=class_id,
             subgroup_id=subgroup_id,
             week=week,
-            weekday=weekday
+            weekday=weekday,
+            teacher_id=teacher_id
         )
         lessons = [await self._add_teacher(lesson) for lesson in lessons]
 
@@ -125,7 +127,8 @@ class LessonService(BaseService):
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
             week: Optional[bool] = None,
-            weekday: Optional[int | list[int]] = None
+            weekday: Optional[int | list[int]] = None,
+            teacher_id: int | None = None
     ) -> list[tables.Lesson] | list[list[tables.Lesson]]:
 
         query = select(tables.Lesson)
@@ -154,6 +157,9 @@ class LessonService(BaseService):
                 query = query.filter(
                     tables.Lesson.weekday == weekday
                 )
+
+        if teacher_id is not None:
+            query = query.filter_by(teacher_id=teacher_id)
 
         query = query.order_by(tables.Lesson.start_time)
 
@@ -253,6 +259,7 @@ class LessonService(BaseService):
             self,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
+            teacher_id: int | None = None,
             do_double: bool = False,
             weekday: int = None
     ) -> schemas.lessons.LessonList | schemas.lessons.LessonListWithDouble:
@@ -261,7 +268,8 @@ class LessonService(BaseService):
         nearest_lessons = await self.get_list(
             class_id=class_id,
             subgroup_id=subgroup_id,
-            group_by_weekdays=True
+            group_by_weekdays=True,
+            teacher_id=teacher_id
         )
         nearest_lessons = list(filter(lambda i: i.lessons and i.lessons[0].weekday >= weekday, 
                                       nearest_lessons)) + \

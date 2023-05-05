@@ -16,6 +16,12 @@ class User(Base):
     name = Column(String, nullable=False, unique=True)
     password = Column(String, nullable=False)
     access_level = Column(Integer, nullable=False, default=0)
+    class_id = Column(ForeignKey('classes.class_id', ondelete='CASCADE'),
+            nullable=True,
+            default=None)
+    teacher_id = Column(ForeignKey('teachers.teacher_id', ondelete='CASCADE'), 
+            nullable=True,
+            default=None)
 
 
 class School(Base):
