@@ -317,7 +317,7 @@ class LessonService(BaseService):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
         return lesson
 
-    async def create(self, lesson_schema: LessonCreate):
+    async def create(self, lesson_schema: LessonCreate) -> dict[str, Any]:
         lesson_dct = lesson_schema.dict()
         lesson_dct['start_time'] = dt.time(**lesson_dct['start_time'])
         lesson_dct['end_time'] = dt.time(**lesson_dct['end_time'])
@@ -342,6 +342,7 @@ class LessonService(BaseService):
             self.session.add(new_lesson_subgroup)
             await self.session.commit()
         except exc.IntegrityError:
+            await self.session.rollback()
             self.response.status_code = status.HTTP_200_OK
             return schemas.subgroups_lessons.LessonSubgroup(
                 **subgroup_lesson.dict()

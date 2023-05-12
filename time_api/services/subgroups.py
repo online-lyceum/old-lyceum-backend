@@ -54,7 +54,8 @@ class SubgroupService(BaseService):
             self, *,
             class_id: Optional[int] = None,
             subgroup_id: Optional[int] = None,
-            subgroup_schema: Optional[schemas.subgroups.SubgroupCreate] = None
+            subgroup_schema: Optional[schemas.subgroups.SubgroupCreate] = None,
+            name: str | None = None
     ):
         query = select(tables.Subgroup)
 
@@ -69,14 +70,18 @@ class SubgroupService(BaseService):
             )
 
         if subgroup_schema is not None:
-            query = query.filter_by(
-                class_id=subgroup_schema.class_id,
-                name=subgroup_schema.name
-            )
+            if subgroup_schema.class_id is not None:
+                query = query.filter_by(
+                    class_id=subgroup_schema.class_id
+                )
+            if subgroup_schema.name is not None:
+                query = query.filter_by(
+                    name=subgroup_schema.name
+                )
 
         subgroup = await self.session.scalar(query)
         if subgroup is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='subgroup')
         return subgroup
 
     async def create(

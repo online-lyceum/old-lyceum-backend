@@ -3,11 +3,11 @@ from pydantic import BaseModel
 
 class BaseSubgroup(BaseModel):
     name: str
-    class_id: int
+    class_id: int = None
 
 
 class SubgroupCreate(BaseSubgroup):
-    pass
+    class_id: int
 
 
 class Subgroup(BaseSubgroup):

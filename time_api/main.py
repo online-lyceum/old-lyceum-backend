@@ -28,6 +28,7 @@ def create_application():
     application.include_router(api.semesters.router)
     application.include_router(api.lessons.router)
     application.include_router(api.auth.router)
+    application.include_router(api.timetable.router)
     return application
 
 
