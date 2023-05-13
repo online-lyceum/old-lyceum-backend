@@ -11,6 +11,7 @@ from time_api import schemas
 from time_api.services.lessons import LessonService
 from time_api.services.subgroups import SubgroupService
 from time_api.services.classes import ClassService
+from time_api.services.lessons_hotfix import LessonHotfixService
 
 import datetime as dt
 
@@ -19,6 +20,54 @@ logger = logging.getLogger(__name__)
 
 
 class TimetableService(BaseService):
+    async def hotfix(
+            self,
+            lessons: list[dict],
+            school_id: int
+    ):
+        hotfix_service = LessonHotfixService(self.session, self.response) 
+        lesson_service = LessonService(self.session, self.response)
+        for lesson in lessons:
+            lesson_schema = schemas.lessons.LessonCreate(
+                name=lesson['name'],
+                start_time=schemas.times.Time(
+                    hour=lesson['start_hour'],
+                    minute=lesson['start_minute']
+                ),
+                end_time=schemas.times.Time(
+                    hour=lesson['end_hour'],
+                    minute=lesson['end_minute']
+                ),
+                week=lesson['week'],
+                weekday=lesson['weekday'],
+                room=lesson['room'] if lesson['room'] else '',
+                school_id=school_id,
+                teacher_id=lesson['teacher_id']
+            )
+            lesson_id = (await lesson_service.get(lesson_schema=lesson_schema)).lesson_id
+            for_date = dt.date.today()
+            days_bias = (int(lesson['weekday']) - for_date.weekday()) % 7
+            for_date += dt.timedelta(days=days_bias)
+            hotfix_schema = schemas.lessons.LessonHotfixCreate(
+                lesson_id=lesson_id,
+                name=lesson["name"],
+                start_time=schemas.times.Time(
+                    hour=lesson['start_hour'],
+                    minute=lesson['start_minute']
+                ),
+                end_time=schemas.times.Time(
+                    hour=lesson['end_hour'],
+                    minute=lesson['end_minute']
+                ),
+                week=lesson['week'],
+                weekday=lesson['weekday'],
+                room=lesson['room'],
+                school_id=school_id,
+                teacher_id=lesson['teacher_id'],
+                for_date=for_date
+            )
+            await hotfix_service.create(hotfix_schema)
+
     async def create(
             self,
             lessons: list[dict],
@@ -64,6 +113,21 @@ class TimetableService(BaseService):
                 )
             )
 
+
+class_teachers = {
+    (8, 'а'): 'Гомонова Екатерина Борисовна',
+    (8, 'б'): 'Храмцова Александра Анатольевна',
+    (8, 'в'): 'Иванова Светлана Владимировна',
+    (9, 'а'): 'Каменяр Анна Александровна',
+    (9, 'б'): 'Брадис Ольга Львовна',
+    (9, 'в'): 'Иванова Светлана Владимировна',
+    (10, 'а'): 'Рынина Татьяна Михайловна',
+    (10, 'б'): 'Яковлева Светлана Николаевна',
+    (10, 'в'): 'Зубакова Мария Александровна',
+    (11, 'а'): 'Пенигина Наталья Николаевна',
+    (11, 'б'): 'Яковлева Светлана Николаевна',
+    (11, 'в'): 'Яремчук Наталья Викторовна'
+}
 
 class_teachers = {
     (8, 'а'): 'Гомонова Екатерина Борисовна',
@@ -139,6 +203,7 @@ def get_weekday_number(weekday_name):
         'четверг': 3,
         'пятница': 4,
         'суббота': 5}[weekday_name.lower()]
+    
 
 def split_lesson_times(start: tuple[int, int], end: tuple[int, int]):
     if (end[0] * 60 + end[1] - start[0] * 60 - start[1]) <= 80:

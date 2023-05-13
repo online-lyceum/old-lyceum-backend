@@ -18,6 +18,8 @@ class LessonHotfixService(BaseService):
     async def create(self, hotfix_schema: schemas.lessons.LessonHotfixCreate):
         hotfix_schema = hotfix_schema.dict()
         hotfix_schema['for_date'] = dt.date(**hotfix_schema['for_date'])
+        hotfix_schema['start_time'] = dt.time(**hotfix_schema['start_time'])
+        hotfix_schema['end_time'] = dt.time(**hotfix_schema['end_time'])
         hotfix = tables.LessonHotfix(**hotfix_schema)
         self.session.add(hotfix)
         await self.session.commit()

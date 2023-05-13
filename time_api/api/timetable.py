@@ -46,3 +46,17 @@ async def create_lessons(
     lessons_list = get_lessons_list(lessons_file)
     return await service.create(lessons_list, school_id)
 
+
+@router.patch(
+    '',
+    status_code=201
+)
+async def hotfix_lesons(
+        lessons_file: UploadFile,
+        school_id: int,
+        _=Depends(authenticate.teacher()),
+        service=Depends(TimetableService),
+):
+    lessons_file = lessons_file.file.read()
+    lessons_list = get_lessons_list(lessons_file)
+    return await service.hotfix(lessons_list, school_id)
