@@ -21,8 +21,11 @@ class LessonHotfixService(BaseService):
         hotfix_schema['start_time'] = dt.time(**hotfix_schema['start_time'])
         hotfix_schema['end_time'] = dt.time(**hotfix_schema['end_time'])
         hotfix = tables.LessonHotfix(**hotfix_schema)
-        self.session.add(hotfix)
-        await self.session.commit()
+        try:
+            self.session.add(hotfix)
+            await self.session.commit()
+        except exc.IntegrityError as e:
+            raise HTTPException(400, detail='Not found or conflict. Check data')
         return hotfix
 
     async def get(
