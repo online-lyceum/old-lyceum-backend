@@ -9,4 +9,4 @@ CMD cd time_api && \
 	init_db && \
 	alembic -c ./alembic.prod.ini upgrade head && \
 	cd /app && \
-	gunicorn time_api.main:app -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:80
+	gunicorn time_api.main:app -w 1 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:80
