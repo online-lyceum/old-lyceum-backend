@@ -11,7 +11,7 @@
 
 ### Клонирование исходного кода
 ```shell
-git clone https://github.com/online-lyceum/TimeAPI.git
+git clone https://github.com/online-lyceum/lyceum-backend.git
 ```
 ### Создание виртуального окружения
 ```shell
@@ -62,7 +62,7 @@ uvicorn time_api.main:app
 
 ### Клонирование исходного кода
 ```shell
-git clone https://github.com/online-lyceum/TimeAPI.git
+git clone https://github.com/online-lyceum/lyceum-backend.git
 ```
 Скорее всего вы хотите проверить работу API через свой браузер. Для этого 
 После изменений таблиц базы данных необходимо заново инициализировать создание
